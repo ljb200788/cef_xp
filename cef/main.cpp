@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "main.h"
-#include "cef_form.h"
+#include "basic_form.h"
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -56,8 +56,8 @@ void MainThread::Init()
 	ui::GlobalManager::Startup(theme_dir + L"resources\\", ui::CreateControlCallback(), false);
 
 	// 创建一个默认带有阴影的居中窗口
-	CefForm* window = new CefForm();
-	window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
+	BasicForm* window = new BasicForm();
+	window->Create(NULL, BasicForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
 	window->CenterWindow();
 	window->ShowWindow();
 }

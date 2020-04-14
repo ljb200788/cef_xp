@@ -57,5 +57,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\bin\resources.zip" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

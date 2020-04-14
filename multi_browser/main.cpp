@@ -34,7 +34,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// 初始化 CEF
 	CefSettings settings;
-	if (!nim_cef::CefManager::GetInstance()->Initialize(nbase::win32::GetCurrentModuleDirectory() + L"cef_temp\\", settings, true))
+	if (!nim_cef::CefManager::GetInstance()->Initialize(nbase::win32::GetCurrentModuleDirectory() + L"cef\\", settings, true))
 	{
 		return 0;
 	}
