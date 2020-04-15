@@ -60,6 +60,18 @@
     <ClInclude Include="result_form.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="RWData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="login_form.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="version_form.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="INI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -93,6 +105,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="result_form.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RWData.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="login_form.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="version_form.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

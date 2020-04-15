@@ -152,6 +152,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>nim_libcef.dll</DelayLoadDLLs>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -178,15 +179,19 @@
     <ClInclude Include="cef_form.h" />
     <ClInclude Include="httplib.h" />
     <ClInclude Include="HttpServerUtil.h" />
+    <ClInclude Include="INI.h" />
+    <ClInclude Include="login_form.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="basic_form.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="result_form.h" />
+    <ClInclude Include="RWData.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="tool.h" />
     <ClInclude Include="util.h" />
+    <ClInclude Include="version_form.h" />
     <ClInclude Include="WininetHttp.h" />
     <ClInclude Include="XMLConfigTool.h" />
     <ClInclude Include="ylog.h" />
@@ -195,8 +200,10 @@
     <ClCompile Include="basic_form.cpp" />
     <ClCompile Include="cef_form.cpp" />
     <ClCompile Include="HttpServerUtil.cpp" />
+    <ClCompile Include="login_form.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="result_form.cpp" />
+    <ClCompile Include="RWData.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -206,6 +213,7 @@
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="tool.cpp" />
     <ClCompile Include="util.cpp" />
+    <ClCompile Include="version_form.cpp" />
     <ClCompile Include="WininetHttp.cpp" />
     <ClCompile Include="XMLConfigTool.cpp" />
   </ItemGroup>

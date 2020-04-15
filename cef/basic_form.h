@@ -31,6 +31,12 @@ public:
 
 	void UpdateHideStateNoticeMenu();
 
+	void AutoHiddenWindow(int iNum);
+
+	void AutoShowWindow();
+
+	bool JudgeCursorOut();
+
 	/**
 	 * 一下三个接口是必须要覆写的接口，父类会调用这三个接口来构建窗口
 	 * GetSkinFolder		接口设置你要绘制的窗口皮肤资源路径
@@ -67,8 +73,14 @@ private:
 	//定义托盘图标对象
 	NOTIFYICONDATA m_trayIcon;
 
+	RECT		m_rtWindow;
+	int			m_iWindowWidth;
+	int			m_iWindowHeight;
+
 	ui::Control*			btn_doctor;
 	ui::Control*			btn_doctor1;
+
+	ui::Box*				box_tool;
 
 	ui::Button* tool_btn1;
 	ui::Button* tool_btn2;

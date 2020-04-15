@@ -23,6 +23,9 @@
 #include "ui_components/ui_components.h"
 #include "ui_components/ui_cef_control.h"
 
+#include "tool.h"
+#include "util.h"
+
 const std::string versionNum = "16";
 
 #define WM_SHOWTASK						WM_USER+101 

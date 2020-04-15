@@ -17,6 +17,7 @@
 #include <json/value.h>
 #include <json/reader.h>
 #include "tool.h"
+#include "RWData.h"
 
 
 using namespace ui;
@@ -27,8 +28,8 @@ string ResultForm::user_name = "";
 
 HWND ResultForm::g_main_hwnd = 0;
 
-
 const std::wstring ResultForm::kClassName = L"result";
+
 
 // 获取屏幕大小
 int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -366,6 +367,101 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 
 		boost::thread zoom_thread(boost::bind(&MoveWindowThreadZoomFun, (void*)this));
 		zoom_thread.detach();	
+
+	}));
+
+	cef_control_->RegisterCppFunc(L"callCsPlugin", ToWeakCallback([this](const std::string& params, nim_cef::ReportResultFunction callback) {
+		callback(false, R"({ "message": "Success." })");
+
+		if (params.empty())
+		{
+			return;
+		}
+
+		::SendMessage(CefForm::g_main_hwnd, WM_OPENRWCLIENT, 0, 0);
+
+		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+		log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "callCsPlugin", params);
+
+		Json::Reader reader;
+		Json::Value result;
+
+		if (reader.parse(params, result))
+		{
+			if (result.isMember("type"))
+			{
+				if (result["type"].isString())
+				{
+					string type = result["type"].asString();
+					if (type.find("SearchRWKnowledge") != string::npos)
+					{
+						if (result.isMember("params"))
+						{
+							if (result["params"].isObject())
+							{
+								string rwname = result["params"]["rwname"].asString();
+								string category = result["params"]["category"].asString();
+								string info_attribute = result["params"]["info_attribute"].asString();
+
+								RWData* data = new RWData();
+								data->rw_rwname = rwname;
+								data->rw_category = category;
+								data->rw_info_attribute = info_attribute;
+
+								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
+
+								delete data;
+							}
+						}
+
+					}
+					else if (type.find("dianosisBasis") != string::npos)
+					{
+						if (result.isMember("params"))
+						{
+							if (result["params"].isObject())
+							{
+								string rwname = result["params"]["name"].asString();
+								string category = "disease";
+								string info_attribute = shared::tools::GBKToUTF8("诊断依据");
+
+								RWData* data = new RWData();
+								data->rw_rwname = rwname;
+								data->rw_category = category;
+								data->rw_info_attribute = info_attribute;
+
+								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
+
+								delete data;
+							}
+						}
+					}
+					else if (type.find("identifyDiagnosis") != string::npos)
+					{
+						if (result.isMember("params"))
+						{
+							if (result["params"].isObject())
+							{
+								string rwname = result["params"]["name"].asString();
+								string category = "disease";
+								string info_attribute = shared::tools::GBKToUTF8("鉴别诊断");
+
+								RWData* data = new RWData();
+								data->rw_rwname = rwname;
+								data->rw_category = category;
+								data->rw_info_attribute = info_attribute;
+
+								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
+
+								delete data;
+							}
+						}
+					}
+				}
+				
+			}
+		}
+
 
 	}));
 

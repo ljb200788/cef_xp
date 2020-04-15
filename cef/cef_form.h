@@ -50,11 +50,18 @@ public:
 
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
+	virtual LRESULT OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+
+	virtual LRESULT OnNcLButtonDbClick(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+
 	static const std::wstring	kClassName;
 
 	static	HWND g_main_hwnd;
 
 	static	std::string strUserName;
+
+	//ÈËÎÀä¯ÀÀÆ÷Ò³Ãæ´°¿Ú
+	static	CefForm* g_ptr_rw_cef;
 
 private:
 	bool OnClicked(ui::EventArgs* msg);
@@ -80,6 +87,10 @@ private:
 	HWND				m_hMainWnd;
 
 	bool				m_bRegisterFlag;
+	bool				m_bQaFlag;
+	std::string			m_question;
+
+	bool				m_bIsFirst;
 
 };
 

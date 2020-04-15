@@ -11,9 +11,12 @@
 #include <Netlistmgr.h>
 #include "HttpServerUtil.h"
 #include "result_form.h"
+#include <tlhelp32.h>
 
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "wininet.lib")
+
+using namespace std;
 
 const std::wstring BasicForm::kClassName = L"Basic";
 
@@ -21,7 +24,28 @@ XMLConfigTool* tool = new XMLConfigTool();
 
 ResultForm* result_form = NULL;
 HWND toastHwnd = 0;
-bool  isUserOnline = true;
+bool  isUserOnline = false;
+
+//是否找到门诊病历窗口
+bool  illHisWndFindState = false;
+
+//是否找到住院病历窗口
+bool  hospitalWndFindState = false;
+
+//门诊病历窗口句柄
+HWND  illHisWnd = 0;
+HWND  mainHisWnd = 0;
+HWND  mainHisParentWnd = 0;
+HWND  prescribeWnd = 0;
+HWND  rwWnd = 0;
+
+//人卫查询结果句柄
+HWND  rwResultWnd = 0;
+
+// 获取屏幕大小
+int iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+int iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
 //托盘菜单
 //win32程序使用的是HMENU，如果是MFC程序可以使用CMenu
 HMENU hMenu;
@@ -32,6 +56,10 @@ volatile bool isTreadState = true;
 volatile bool isTreadMessageState = true;
 volatile bool isTreadRWKnowledgeState = true;
 volatile bool isTreadRecordState = true;
+
+bool  isVKSpacePressState = false;
+
+bool  isNetOfficeWndFind = false;
 
 int hotkeyId8 = 1;
 int hotkeyId7 = 2;
@@ -46,7 +74,21 @@ CHttpServerUtil* serverUtil = new CHttpServerUtil();
 
 std::map<string, HWND> windowMap;
 
-using namespace std;
+string paraString = "";
+string urlString = "";
+
+//主诉
+string  ocrMainSuit = "";
+//现病史
+string  ocrIllnessHis = "";
+//过敏史
+string  ocrAllergyHis = "";
+//家庭史
+string  ocrFamilyHis = "";
+//既往史
+string  ocrPastHis = "";
+//个人史
+string  ocrPersonalHis = "";
 
 
 BOOL IsNetConnected()
@@ -87,6 +129,80 @@ BOOL IsNetConnected()
 	return bOnline;
 }
 
+void RunHttpServer()
+{
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	if (serverUtil->StartServer())
+	{
+		//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("启动成功"));
+	}
+	else
+	{
+		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("启动失败,端口已被占用"));
+	}
+
+	if (serverUtil)
+	{
+		delete serverUtil;
+		serverUtil = NULL;
+	}
+}
+
+
+void ReceiveMessage(void*& data)
+{
+
+	int i = 0;
+	bool  isVisible = false;
+	while (isTreadMessageState)
+	{
+		try
+		{
+			boost::this_thread::sleep(boost::posix_time::microseconds(200));
+			BasicForm* ptrForm = (BasicForm*)data;
+			if (ptrForm != NULL)
+			{
+
+				if (isVisible)
+				{
+					if (ptrForm->JudgeCursorOut())
+					{
+						ptrForm->AutoHiddenWindow(80);
+					}
+					else
+					{
+						ptrForm->AutoShowWindow();
+					}
+				}
+
+				if (i >= 10)
+				{
+					if (IsWindowVisible(ptrForm->GetHWND()) && !isVisible)
+					{
+						//获取屏幕大小
+						int iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+						int iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+						ui::UiRect rect = ptrForm->GetPos();
+
+						SetWindowPos(ptrForm->GetHWND(), HWND_TOPMOST, iScreenWidth - rect.GetWidth() + 30, iScreenHeight / 2, rect.GetWidth(), rect.GetHeight(), SWP_SHOWWINDOW);
+
+						isVisible = true;
+					}
+
+				}
+				i++;
+			}
+		}
+		catch (exception e)
+		{
+			YLog log(YLog::INFO, "log.txt", YLog::ADD);
+			log.W(__FILE__, __LINE__, YLog::INFO, "exception", e.what());
+		}
+	}
+}
+
 BasicForm::BasicForm()
 {
 }
@@ -109,6 +225,138 @@ std::wstring BasicForm::GetSkinFile()
 std::wstring BasicForm::GetWindowClassName() const
 {
 	return kClassName;
+}
+
+void BasicForm::AutoHiddenWindow(int iNum)
+{
+	//获取屏幕大小
+	iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+	iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	//RECT m_rtWindow;
+	GetWindowRect(m_hWnd, &m_rtWindow);
+	m_iWindowWidth = m_rtWindow.right - m_rtWindow.left;
+	m_iWindowHeight = m_rtWindow.bottom - m_rtWindow.top;
+
+	//left
+	if (m_rtWindow.right >= iNum && m_rtWindow.left < 0 && m_rtWindow.top > 0)
+	{
+		// 获取窗口范围
+		GetWindowRect(m_hWnd, &m_rtWindow);
+		// 移动窗口
+		MoveWindow(m_hWnd, 10, m_rtWindow.top, m_iWindowWidth, m_iWindowHeight, TRUE);
+	}
+
+	//top
+	if (m_rtWindow.top < 20 && m_rtWindow.bottom >= iNum)
+	{
+		// 获取窗口范围
+		GetWindowRect(m_hWnd, &m_rtWindow);
+		// 移动窗口
+		MoveWindow(m_hWnd, m_rtWindow.left, 50, m_iWindowWidth, m_iWindowHeight, TRUE);
+	}
+
+	//bottom
+	if (m_rtWindow.top > 0 && m_rtWindow.bottom > (iScreenHeight - 50))
+	{
+		// 获取窗口范围
+		GetWindowRect(m_hWnd, &m_rtWindow);
+		// 移动窗口
+		MoveWindow(m_hWnd, m_rtWindow.left, (m_rtWindow.top - m_iWindowHeight - 30), m_iWindowWidth, m_iWindowHeight, TRUE);
+	}
+
+	//right
+	if (m_rtWindow.right >= (iScreenWidth - 10) && m_rtWindow.left <= iScreenWidth - iNum && m_rtWindow.top > 0)
+	{
+		// 获取窗口范围
+		GetWindowRect(m_hWnd, &m_rtWindow);
+		// 移动窗口
+		MoveWindow(m_hWnd, m_rtWindow.left + 2, m_rtWindow.top, m_iWindowWidth, m_iWindowHeight, TRUE);
+
+
+		if (btn_doctor != NULL)
+		{
+			btn_doctor->SetVisible(false);
+		}
+		if (btn_doctor1 != NULL)
+		{
+			btn_doctor1->SetVisible(true);
+			box_tool->SetVisible(false);
+		}
+
+	}
+}
+
+void BasicForm::AutoShowWindow()
+{
+	// 获取屏幕大小
+	iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+	iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	RECT m_rtWindow;
+	GetWindowRect(this->m_hWnd, &m_rtWindow);
+	m_iWindowWidth = m_rtWindow.right - m_rtWindow.left;
+	m_iWindowHeight = m_rtWindow.bottom - m_rtWindow.top;
+
+	// 向右弹出
+	/*while (m_rtWindow.left < 0)
+	{
+	// 移动窗口
+	MoveWindow(this->m_hWnd, m_rtWindow.left + 2, m_rtWindow.top, m_iWindowWidth, m_iWindowHeight, FALSE);
+	// 获取窗口范围
+	GetWindowRect(this->m_hWnd, &m_rtWindow);
+	}
+
+	// 向下收弹出
+	while (m_rtWindow.top < 0)
+	{
+	// 移动窗口
+	MoveWindow(this->m_hWnd, m_rtWindow.left, m_rtWindow.top + 2, m_iWindowWidth, m_iWindowHeight, FALSE);
+	// 获取窗口范围
+	GetWindowRect(this->m_hWnd, &m_rtWindow);
+	}*/
+
+	// 向左弹出
+	while (m_rtWindow.right > iScreenWidth)
+	{
+		// 移动窗口
+		MoveWindow(this->m_hWnd, m_rtWindow.left - 2, m_rtWindow.top, m_iWindowWidth, m_iWindowHeight, FALSE);
+		// 获取窗口范围
+		GetWindowRect(this->m_hWnd, &m_rtWindow);
+
+		if (btn_doctor != NULL)
+		{
+			btn_doctor->SetVisible(true);
+			box_tool->SetVisible(true);
+		}
+
+		if (btn_doctor1 != NULL)
+		{
+			btn_doctor1->SetVisible(false);
+		}
+	}
+
+}
+
+bool BasicForm::JudgeCursorOut()
+{
+	// 获取鼠标位置
+	POINT point;
+	GetCursorPos(&point);
+
+	// 获取窗口范围
+	RECT m_rtWindow;
+	GetWindowRect(this->m_hWnd, &m_rtWindow);
+
+	// 判断
+	if (point.x >= m_rtWindow.left && point.x <= m_rtWindow.right && point.y >= m_rtWindow.top && point.y <= m_rtWindow.bottom)
+	{
+		return false;  // 鼠标还在窗口内
+	}
+	else
+	{
+		return true;   // 鼠标离开窗口
+	}
 }
 
 void BasicForm::ShowDevTool()
@@ -194,6 +442,203 @@ void GetToolConfigThreadFun(void*& data)
 	}
 }
 
+/*
+判断是否安装.NETFramework
+*/
+bool IsFrameworkInstalled()
+{
+	HKEY hKey;
+	LPCTSTR path1 = TEXT("SOFTWARE\\Microsoft\\.NETFramework\\v2.0.50727");
+	LPCTSTR path2 = TEXT("SOFTWARE\\Microsoft\\.NETFramework\\v4.0.30319");
+	LONG lResult1 = RegOpenKeyEx(HKEY_LOCAL_MACHINE, path1, 0, KEY_READ, &hKey);
+	::RegCloseKey(hKey);
+	LONG lResult2 = RegOpenKeyEx(HKEY_LOCAL_MACHINE, path1, 0, KEY_READ, &hKey);
+	::RegCloseKey(hKey);
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	if (lResult1 != ERROR_SUCCESS || lResult2 != ERROR_SUCCESS)
+	{
+		log.W(__FILE__, __LINE__, YLog::INFO, ".NETFramework", shared::tools::UtfToString("未安装.NETFramework"));
+		return false;
+	}
+	else
+	{
+		log.W(__FILE__, __LINE__, YLog::DEBUG, ".NETFramework", shared::tools::UtfToString("已安装.NETFramework"));
+		return true;
+	}
+}
+
+DWORD GetProcessIDByName(WCHAR* pName)
+{
+	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (INVALID_HANDLE_VALUE == hSnapshot) {
+		return 0;
+	}
+	PROCESSENTRY32 pe = { sizeof(pe) };
+	for (BOOL ret = Process32First(hSnapshot, &pe); ret; ret = Process32Next(hSnapshot, &pe)) {
+		if (wcscmp(pe.szExeFile, pName) == 0) {
+			CloseHandle(hSnapshot);
+			return pe.th32ProcessID;
+		}
+	}
+	CloseHandle(hSnapshot);
+	return 0;
+}
+
+void CheckRWKnowledgeFun(void*& data)
+{
+	isTreadRWKnowledgeState = true;
+	while (isTreadRWKnowledgeState)
+	{
+		DWORD pid = GetProcessIDByName(L"RWKnowledge.exe");
+		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+		if (pid == 0)
+		{
+			std::string exePath = nbase::UTF16ToUTF8(QPath::GetAppPath());
+			std::string rwPath = exePath + "RWKnowledge";
+			if (!shared::tools::FilePathIsExist(rwPath, true))
+			{
+				log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("人卫文件夹不存在"), rwPath);
+				return;
+			}
+			else
+			{
+				std::string rwKnowledgePath = exePath + "RWKnowledge\\RWKnowledge.exe";
+
+				ShellExecute(NULL, _T("open"), nbase::UTF8ToUTF16(rwKnowledgePath.c_str()).c_str(), NULL, NULL, SW_SHOWNORMAL);
+
+				log.W(__FILE__, __LINE__, YLog::INFO, "RWKnowledge.exe", "restart");
+			}
+
+			std::this_thread::sleep_for(std::chrono::seconds(3));
+
+			if (CefForm::g_ptr_rw_cef != NULL)
+			{
+				CefForm::g_ptr_rw_cef->RefreshNavigateUrl();
+			}
+
+		}
+
+		std::this_thread::sleep_for(std::chrono::seconds(10));
+	}
+}
+
+void WriteStartRegFile()
+{
+	ofstream fout("open.reg", ios::out);
+	if (!fout)
+	{
+		cout << "文件打开失败！" << endl;
+		exit(1);
+	}
+	fout << "Windows Registry Editor Version 5.00\n";
+	fout << "[HKEY_CLASSES_ROOT\\Diagnosticshell]\n";
+	fout << "@=\"Open Diagnostics\"\n";
+	fout << "\"URL Protocol\" = \"\"\n";
+	fout << "[HKEY_CLASSES_ROOT\\Diagnosticshell\\DefaultIcon]\n";
+
+	std::string exeDir = nbase::UTF16ToUTF8(QPath::GetAppPath());
+	std::string exePath = exeDir + "DiagnosticAssistant.exe";
+
+	exePath = shared::tools::replaceAllMark(exePath, "\\", "\\\\");
+
+	std::string data = "@=\"" + exePath + "\"\n";
+	fout << data;
+	fout << "[HKEY_CLASSES_ROOT\\Diagnosticshell\\shell]\n";
+	fout << "[HKEY_CLASSES_ROOT\\Diagnosticshell\\shell\\open]\n";
+	fout << "[HKEY_CLASSES_ROOT\\Diagnosticshell\\shell\\open\\command]\n";
+
+	data = "@=\"\\\"" + exePath + "\\\" \\\"%1\\\"\"\n";
+	fout << data;
+
+	fout.close();
+
+	//std::string regdir = exeDir + "open.reg";
+	//std::string cmd = "regedit /s " + regdir;
+	//system(cmd.c_str());
+	//WinExec(cmd.c_str(), SW_HIDE);
+	//ShellExecute(NULL, L"open", L"open.reg", NULL, NULL, SW_HIDE);
+
+	HKEY hKey = NULL;
+	TCHAR * subKey = _T("Diagnosticshell");
+	DWORD dwOptions = REG_OPTION_NON_VOLATILE;
+	DWORD dwDisposition;
+	long result = RegCreateKeyEx(HKEY_CLASSES_ROOT, subKey, 0, NULL,
+		dwOptions, KEY_WRITE, NULL, &hKey, &dwDisposition);
+	if (result != ERROR_SUCCESS)
+	{
+
+	}
+	else
+	{
+		/*if (dwDisposition == REG_OPENED_EXISTING_KEY)
+		{
+
+		}
+		else if (dwDisposition == REG_CREATED_NEW_KEY)
+		{
+
+		}*/
+
+		try
+		{
+			if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS) ///打开启动项       
+			{
+
+				std::string regStr = "";
+				std::wstring exe_dir = nbase::UTF8ToUTF16(regStr);
+
+				//3、判断注册表项是否已经存在
+				TCHAR strDir[MAX_PATH] = {};
+				//5、添加一个子Key,并设置值，"GISRestart"是应用程序名字（不加后缀.exe） 
+				RegSetValueEx(hKey, _T("URL Protocol"), 0, REG_SZ, (LPBYTE)exe_dir.c_str(),
+					(lstrlen(exe_dir.c_str()) + 1) * sizeof(TCHAR));
+				//6、关闭注册表
+				RegCloseKey(hKey);
+			}
+			else
+			{
+				std::cout << "警告\n系统参数错误,不能随系统启动" << std::endl;
+			}
+		}
+		catch (std::exception e)
+		{
+		}
+
+		subKey = _T("Diagnosticshell\\shell\\open\\command");
+		result = RegCreateKeyEx(HKEY_CLASSES_ROOT, subKey, 0, NULL,
+			dwOptions, KEY_WRITE, NULL, &hKey, &dwDisposition);
+
+		try
+		{
+			//1、找到系统的启动项  
+			if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS) ///打开启动项       
+			{
+				std::string regExePath = exeDir + "DiagnosticAssistant.exe";
+				std::string regStr = "\"" + regExePath + "\" \"%1\"";
+				std::wstring exe_dir = nbase::UTF8ToUTF16(regStr);
+
+				//3、判断注册表项是否已经存在
+				TCHAR strDir[MAX_PATH] = {};
+				//5、添加一个子Key,并设置值，"GISRestart"是应用程序名字（不加后缀.exe） 
+				RegSetValueEx(hKey, NULL, 0, REG_SZ, (LPBYTE)exe_dir.c_str(),
+					(lstrlen(exe_dir.c_str()) + 1) * sizeof(TCHAR));
+				//6、关闭注册表
+				RegCloseKey(hKey);
+			}
+			else
+			{
+
+			}
+		}
+		catch (std::exception e)
+		{
+		}
+	}
+
+}
+
 void BasicForm::InitWindow()
 {
 	// 监听鼠标单击事件
@@ -205,7 +650,15 @@ void BasicForm::InitWindow()
 	{
 		//默认隐藏提示图标
 		btn_doctor1->SetVisible(false);
+		btn_doctor1->SetBkImage(L"doctor-hi-disable.png");
 	}
+
+	if (btn_doctor)
+	{
+		btn_doctor->SetBkImage(L"doctor-disable.png");
+	}
+
+	box_tool = dynamic_cast<ui::Box*>(FindControl(L"toolBox"));
 
 	tool_btn1 = dynamic_cast<ui::Button*>(FindControl(L"proxy_setting1"));
 	tool_btn2 = dynamic_cast<ui::Button*>(FindControl(L"proxy_setting2"));
@@ -213,6 +666,11 @@ void BasicForm::InitWindow()
 	tool_btn4 = dynamic_cast<ui::Button*>(FindControl(L"proxy_setting4"));
 	tool_btn5 = dynamic_cast<ui::Button*>(FindControl(L"proxy_setting5"));
 	tool_btn6 = dynamic_cast<ui::Button*>(FindControl(L"proxy_setting6"));
+
+	LONG styleValue = ::GetWindowLong(m_hWnd, GWL_EXSTYLE);
+	styleValue &= ~(WS_EX_APPWINDOW);//当窗口可见时将一个顶层窗口放置在任务栏上
+	styleValue |= WS_EX_TOOLWINDOW; //工具条窗口样式
+	SetWindowLong(m_hWnd, GWL_EXSTYLE, styleValue);
 
 	AddTrayIcon();
 
@@ -222,12 +680,45 @@ void BasicForm::InitWindow()
 
 	SetTaskbarTitle(L"辅助诊断助手");
 
+	std::string exeDir = nbase::UTF16ToUTF8(QPath::GetAppPath());
+	std::string regPath = exeDir + "open.reg";
+
+	if (!shared::tools::FilePathIsExist(regPath, false))
+	{
+		WriteStartRegFile();
+	}
+
+	//20M文件 20*1000**1000
+	shared::tools::ClearFile(L"log.txt", 20000000);
+
+
+	boost::thread serverThread(&RunHttpServer);
+	serverThread.detach();
+
+	boost::thread receive_thread(boost::bind(&ReceiveMessage, (void*)this));
+	receive_thread.detach();
+
 	boost::thread toolConfigThread(boost::bind(&GetToolConfigThreadFun, (void*)this));
 	toolConfigThread.detach();
+
+	if (IsFrameworkInstalled())
+	{
+		if (tool->GetRwStartConfig())
+		{
+			boost::thread rwThread(boost::bind(&CheckRWKnowledgeFun, (void*)this));
+			rwThread.detach();
+		}
+	}
 
 	ShowDevTool();
 
 	CefForm::g_main_hwnd = GetHWND();
+
+	SetForegroundWindow(m_hWnd);
+
+	ShowWindow(true);
+
+	::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
 void BasicForm::ExitApp()
@@ -462,6 +953,268 @@ BOOL BasicForm::ShowBalloonTip(wstring szMsg, wstring szTitle, DWORD dwInfoFlags
 	return 0 != Shell_NotifyIcon(NIM_MODIFY, &m_trayIcon);
 }
 
+BOOL CALLBACK EnumChildProc(_In_ HWND hwnd, _In_ LPARAM lParam)
+{
+	char szTitle[MAX_PATH] = { 0 };
+	char szTitle1[MAX_PATH] = { 0 };
+	char szClass[MAX_PATH] = { 0 };
+	int nMaxCount = MAX_PATH;
+
+	LPSTR lpClassName = szClass;
+	LPSTR lpWindowName = szTitle;
+
+	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
+	GetClassNameA(hwnd, lpClassName, nMaxCount);
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+	//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+	//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+	//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+	string className = lpClassName;
+	string windowNameCurrent = lpWindowName;
+
+	if (className.find("WebOfficeWnd") != string::npos)
+	{
+		isNetOfficeWndFind = true;
+	}
+
+	if (windowNameCurrent.find("电子病历 - Internet Explorer") != string::npos)
+	{
+		hospitalWndFindState = true;
+	}
+
+	if (strcmp(lpClassName, "WindowsForms10.Window.8.app.0.33c0d9d") == 0)
+	{
+		//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+		//log.W(__FILE__, __LINE__, YLog::INFO, "parent", GetParent(hwnd));
+		GetClassNameA(GetParent(hwnd), lpClassName, nMaxCount);
+		GetWindowTextA(GetParent(hwnd), lpWindowName, nMaxCount);
+		if (strcmp(lpWindowName, " 人卫inside") == 0)
+		{
+			rwResultWnd = GetParent(hwnd);
+		}
+		else
+		{
+			if (GetParent(hwnd) > 0)
+			{
+				rwWnd = GetParent(hwnd);
+			}
+
+		}
+		//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+		//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+	}
+	size_t found;
+	{
+		HWND parent = GetParent(hwnd);
+		if (parent)
+		{
+			LPSTR lpWindowName1 = szTitle1;
+
+			GetWindowTextA(parent, lpWindowName1, nMaxCount);
+			string windowName = lpWindowName1;
+			if (!windowName.empty())
+			{
+				found = windowName.find("门诊病历");
+				if (found != string::npos)
+				{
+					found = className.find("pbdw126");
+					if (found != string::npos)
+					{
+						string windowName = lpWindowName;
+						found = windowName.find("none");
+						if (found != string::npos)
+						{
+							//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+							//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+							//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+							//print_window2(hwnd,1);
+
+							for (int id = 1; id < 0x00000F; id++)
+							{
+								HWND h = ::GetDlgItem(hwnd, id);
+								if (h != NULL)
+								{
+									int len = SendMessage(h, WM_GETTEXTLENGTH, 0, 0);
+									TCHAR* buffer = new TCHAR[len + 1];
+									::SendMessage(h, WM_GETTEXT, (WPARAM)(len + 1), (LPARAM)buffer);//第三个和第四个参数是缓存大小和缓存指针
+									wstring dd = buffer;
+
+									if (!dd.empty())
+									{
+
+										if (id == 10)
+										{
+											ocrMainSuit = nbase::UTF16ToUTF8(buffer);
+										}
+										else if (id == 11)
+										{
+
+											POINT point;
+											GetCursorPos(&point);
+											//log.W(__FILE__, __LINE__, YLog::INFO, "x", point.x);
+											//log.W(__FILE__, __LINE__, YLog::INFO, "y", point.y);
+
+											if (point.y == 280)
+											{
+												ocrIllnessHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 320)
+											{
+												ocrPastHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 360)
+											{
+												ocrPersonalHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 400)
+											{
+												ocrFamilyHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 430)
+											{
+												ocrAllergyHis = nbase::UTF16ToUTF8(buffer);
+											}
+											//log.W(__FILE__, __LINE__, YLog::INFO, "id", id);
+											//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("文本信息"), nbase::UTF16ToUTF8(buffer));
+										}
+
+
+									}
+								}
+							}
+						}
+
+					}
+
+				}
+			}
+		}
+	}
+
+	string windowName = lpWindowName;
+	if (!windowName.empty())
+	{
+		found = windowName.find("门诊病历");
+		if (found != string::npos)
+		{
+			illHisWnd = hwnd;
+			illHisWndFindState = true;
+		}
+
+		found = windowName.find("处方明细");
+		if (found != string::npos)
+		{
+			prescribeWnd = hwnd;
+		}
+
+		found = windowName.find("欢迎使用湖南省基层医疗卫生机构管理信息系统");
+		if (found != string::npos)
+		{
+			mainHisParentWnd = hwnd;
+
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+			if (strcmp(lpClassName, "FNHELP126") == 0)
+			{
+				HWND parent = GetParent(mainHisParentWnd);
+				//log.W(__FILE__, __LINE__, YLog::INFO, "parent", parent);
+
+				GetWindowTextA(parent, lpWindowName, nMaxCount);
+				GetClassNameA(parent, lpClassName, nMaxCount);
+				//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+				//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+				if (strcmp(lpClassName, "FNWND3126") == 0)
+				{
+					mainHisParentWnd = parent;
+				}
+			}
+
+		}
+
+		found = windowName.find("门诊医生工作站");
+		if (found != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+			HWND parent = GetParent(hwnd);
+
+			mainHisWnd = GetParent(parent);
+
+			GetWindowTextA(mainHisWnd, lpWindowName, nMaxCount);
+			GetClassNameA(mainHisWnd, lpClassName, nMaxCount);
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+		}
+
+	}
+	return TRUE;
+}
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	/*
+	Remarks
+	The EnumWindows function does not enumerate child windows,
+	with the exception of a few top-level windows owned by the
+	system that have the WS_CHILD style.
+	*/
+	char szTitle[MAX_PATH] = { 0 };
+	char szClass[MAX_PATH] = { 0 };
+	int nMaxCount = MAX_PATH;
+
+	LPSTR lpClassName = szClass;
+	LPSTR lpWindowName = szTitle;
+
+	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
+	GetClassNameA(hwnd, lpClassName, nMaxCount);
+
+	EnumChildWindows(hwnd, EnumChildProc, lParam);
+
+	return TRUE;
+}
+
+void  GetAllWindowState()
+{
+	//每次遍历窗口前初始化各窗口标识状态
+	illHisWndFindState = false;
+	hospitalWndFindState = false;
+	prescribeWnd = 0;
+	illHisWnd = 0;
+	mainHisWnd = 0;
+	rwResultWnd = 0;
+	EnumWindows(EnumWindowsProc, 0);
+}
+
+/*
+启动线程每隔一秒检测人卫结果页面并将它置为桌面顶端
+*/
+void CheckRWKnowledgeResultFun(void*& data)
+{
+	while (true)
+	{
+		GetAllWindowState();
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+
+		if (rwResultWnd > 0)
+		{
+			//::PostMessage(rwResultWnd, WM_SHOWWINDOW, true, SW_OTHERZOOM);
+
+			SendMessage(rwResultWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+			SetForegroundWindow(rwResultWnd);
+			return;
+		}
+	}
+}
+
+
 LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 
@@ -471,6 +1224,9 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		ShowWindow(true);
 		::SetFocus(m_hWnd);
 		SetForegroundWindow(m_hWnd);
+		ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+		ModifyMenu(hMenu, 8, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+
 		//显示主窗口
 		::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
@@ -573,10 +1329,9 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			btn_doctor->SetBkImage(L"doctor.png");
 			btn_doctor1->SetBkImage(L"doctor-hi.png");
 
-			m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(130));
+			m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(131));
 			Shell_NotifyIcon(NIM_MODIFY, &m_trayIcon);
 
-			//wstring name = nbase::UTF8ToUTF16(CefForm::strUserName.c_str());
 			ShowBalloonTip(L"上线成功！", L"辅助诊断助手", NIIF_INFO,3000);
 
 			isUserOnline = true;
@@ -684,8 +1439,12 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			else
 			{
 				result_form->SetNavigateUrl(*url);
-				result_form->ReloadNavigateUrl();
 				::SendMessage(result_form->GetHWND(), WM_SYSCOMMAND, SC_RESTORE, NULL);
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+				result_form->ReloadNavigateUrl();
+
 				RECT rect;
 				GetWindowRect(result_form->GetHWND(), &rect);
 				::SetWindowPos(result_form->GetHWND(), HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
@@ -695,6 +1454,20 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			windowMap[*url] = result_form->GetHWND();
 
 		}
+	}
+	else if (uMsg == WM_OPENRWCLIENT)
+	{
+		if (wParam == 1)
+		{
+			boost::thread rwThread(boost::bind(&CheckRWKnowledgeResultFun, (void*)this));
+			rwThread.detach();
+		}
+		else
+		{
+			boost::thread rwThread(boost::bind(&CheckRWKnowledgeResultFun, (void*)this));
+			rwThread.detach();
+		}
+
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
@@ -731,7 +1504,7 @@ void BasicForm::AddTrayIcon()
 {
 	memset(&m_trayIcon, 0, sizeof(NOTIFYICONDATA));
 	m_trayIcon.cbSize = sizeof(NOTIFYICONDATA);
-	m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(131));
+	m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(130));
 	m_trayIcon.hWnd = m_hWnd;
 	lstrcpy(m_trayIcon.szTip, _T("辅助诊断助手"));
 	m_trayIcon.uCallbackMessage = WM_SHOWTASK;
