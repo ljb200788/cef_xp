@@ -154,7 +154,7 @@ void CefForm::InitWindow()
 	else
 	{
 		// 加载皮肤目录下的 html 文件
-		cef_control_->LoadURL(nbase::win32::GetCurrentModuleDirectory() + L"resources\\themes\\default\\cef\\cef.html");
+		cef_control_->LoadURL(nbase::win32::GetCurrentModuleDirectory() + L"resources\\themes\\default\\cef\\404.html");
 	}
 
 	btn_hidden_tool_ = dynamic_cast<ui::Button*>(FindControl(L"hiddenbtn"));

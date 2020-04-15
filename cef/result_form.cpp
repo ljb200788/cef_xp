@@ -532,7 +532,6 @@ bool ResultForm::Notify(ui::EventArgs* msg)
 
 LRESULT ResultForm::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-
 	if (g_main_hwnd != 0)
 	{
 		::SendMessage(g_main_hwnd, WM_RESULTWINDOWCLOSE, (int)GetHWND(), 0);

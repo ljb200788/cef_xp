@@ -15,6 +15,7 @@
 
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "wininet.lib")
+#pragma comment(lib, "version.lib")
 
 using namespace std;
 
@@ -58,7 +59,6 @@ volatile bool isTreadRWKnowledgeState = true;
 volatile bool isTreadRecordState = true;
 
 bool  isVKSpacePressState = false;
-
 bool  isNetOfficeWndFind = false;
 
 int hotkeyId8 = 1;
@@ -201,6 +201,244 @@ void ReceiveMessage(void*& data)
 			log.W(__FILE__, __LINE__, YLog::INFO, "exception", e.what());
 		}
 	}
+}
+
+BOOL CALLBACK EnumChildProc(_In_ HWND hwnd, _In_ LPARAM lParam)
+{
+	char szTitle[MAX_PATH] = { 0 };
+	char szTitle1[MAX_PATH] = { 0 };
+	char szClass[MAX_PATH] = { 0 };
+	int nMaxCount = MAX_PATH;
+
+	LPSTR lpClassName = szClass;
+	LPSTR lpWindowName = szTitle;
+
+	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
+	GetClassNameA(hwnd, lpClassName, nMaxCount);
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+	//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+	//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+	//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+	string className = lpClassName;
+	string windowNameCurrent = lpWindowName;
+
+	if (className.find("WebOfficeWnd") != string::npos)
+	{
+		isNetOfficeWndFind = true;
+	}
+
+	if (windowNameCurrent.find("电子病历 - Internet Explorer") != string::npos)
+	{
+		hospitalWndFindState = true;
+	}
+
+	if (strcmp(lpClassName, "WindowsForms10.Window.8.app.0.33c0d9d") == 0)
+	{
+		//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+		//log.W(__FILE__, __LINE__, YLog::INFO, "parent", GetParent(hwnd));
+		GetClassNameA(GetParent(hwnd), lpClassName, nMaxCount);
+		GetWindowTextA(GetParent(hwnd), lpWindowName, nMaxCount);
+		if (strcmp(lpWindowName, " 人卫inside") == 0)
+		{
+			rwResultWnd = GetParent(hwnd);
+		}
+		else
+		{
+			if (GetParent(hwnd) > 0)
+			{
+				rwWnd = GetParent(hwnd);
+			}
+
+		}
+		//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+		//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+	}
+	size_t found;
+	{
+		HWND parent = GetParent(hwnd);
+		if (parent)
+		{
+			LPSTR lpWindowName1 = szTitle1;
+
+			GetWindowTextA(parent, lpWindowName1, nMaxCount);
+			string windowName = lpWindowName1;
+			if (!windowName.empty())
+			{
+				found = windowName.find("门诊病历");
+				if (found != string::npos)
+				{
+					found = className.find("pbdw126");
+					if (found != string::npos)
+					{
+						string windowName = lpWindowName;
+						found = windowName.find("none");
+						if (found != string::npos)
+						{
+							//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
+							//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+							//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+							//print_window2(hwnd,1);
+
+							for (int id = 1; id < 0x00000F; id++)
+							{
+								HWND h = ::GetDlgItem(hwnd, id);
+								if (h != NULL)
+								{
+									int len = SendMessage(h, WM_GETTEXTLENGTH, 0, 0);
+									TCHAR* buffer = new TCHAR[len + 1];
+									::SendMessage(h, WM_GETTEXT, (WPARAM)(len + 1), (LPARAM)buffer);//第三个和第四个参数是缓存大小和缓存指针
+									wstring dd = buffer;
+
+									if (!dd.empty())
+									{
+
+										if (id == 10)
+										{
+											ocrMainSuit = nbase::UTF16ToUTF8(buffer);
+										}
+										else if (id == 11)
+										{
+
+											POINT point;
+											GetCursorPos(&point);
+											//log.W(__FILE__, __LINE__, YLog::INFO, "x", point.x);
+											//log.W(__FILE__, __LINE__, YLog::INFO, "y", point.y);
+
+											if (point.y == 280)
+											{
+												ocrIllnessHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 320)
+											{
+												ocrPastHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 360)
+											{
+												ocrPersonalHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 400)
+											{
+												ocrFamilyHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 430)
+											{
+												ocrAllergyHis = nbase::UTF16ToUTF8(buffer);
+											}
+											//log.W(__FILE__, __LINE__, YLog::INFO, "id", id);
+											//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("文本信息"), nbase::UTF16ToUTF8(buffer));
+										}
+
+
+									}
+								}
+							}
+						}
+
+					}
+
+				}
+			}
+		}
+	}
+
+	string windowName = lpWindowName;
+	if (!windowName.empty())
+	{
+		found = windowName.find("门诊病历");
+		if (found != string::npos)
+		{
+			illHisWnd = hwnd;
+			illHisWndFindState = true;
+		}
+
+		found = windowName.find("处方明细");
+		if (found != string::npos)
+		{
+			prescribeWnd = hwnd;
+		}
+
+		found = windowName.find("欢迎使用湖南省基层医疗卫生机构管理信息系统");
+		if (found != string::npos)
+		{
+			mainHisParentWnd = hwnd;
+
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+			if (strcmp(lpClassName, "FNHELP126") == 0)
+			{
+				HWND parent = GetParent(mainHisParentWnd);
+				//log.W(__FILE__, __LINE__, YLog::INFO, "parent", parent);
+
+				GetWindowTextA(parent, lpWindowName, nMaxCount);
+				GetClassNameA(parent, lpClassName, nMaxCount);
+				//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+				//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+				if (strcmp(lpClassName, "FNWND3126") == 0)
+				{
+					mainHisParentWnd = parent;
+				}
+			}
+
+		}
+
+		found = windowName.find("门诊医生工作站");
+		if (found != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+
+			HWND parent = GetParent(hwnd);
+
+			mainHisWnd = GetParent(parent);
+
+			GetWindowTextA(mainHisWnd, lpWindowName, nMaxCount);
+			GetClassNameA(mainHisWnd, lpClassName, nMaxCount);
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
+		}
+
+	}
+	return TRUE;
+}
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	/*
+	Remarks
+	The EnumWindows function does not enumerate child windows,
+	with the exception of a few top-level windows owned by the
+	system that have the WS_CHILD style.
+	*/
+	char szTitle[MAX_PATH] = { 0 };
+	char szClass[MAX_PATH] = { 0 };
+	int nMaxCount = MAX_PATH;
+
+	LPSTR lpClassName = szClass;
+	LPSTR lpWindowName = szTitle;
+
+	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
+	GetClassNameA(hwnd, lpClassName, nMaxCount);
+
+	EnumChildWindows(hwnd, EnumChildProc, lParam);
+
+	return TRUE;
+}
+
+void  GetAllWindowState()
+{
+	//每次遍历窗口前初始化各窗口标识状态
+	illHisWndFindState = false;
+	hospitalWndFindState = false;
+	prescribeWnd = 0;
+	illHisWnd = 0;
+	mainHisWnd = 0;
+	rwResultWnd = 0;
+	EnumWindows(EnumWindowsProc, 0);
 }
 
 BasicForm::BasicForm()
@@ -691,6 +929,7 @@ void BasicForm::InitWindow()
 	//20M文件 20*1000**1000
 	shared::tools::ClearFile(L"log.txt", 20000000);
 
+	serverUtil->m_MainHwnd = GetHWND();
 
 	boost::thread serverThread(&RunHttpServer);
 	serverThread.detach();
@@ -723,7 +962,7 @@ void BasicForm::InitWindow()
 
 void BasicForm::ExitApp()
 {
-
+	/*
 	UnregisterHotKey(GetHWND(), hotkeyId8);
 	UnregisterHotKey(GetHWND(), hotkeyId7);
 	UnregisterHotKey(GetHWND(), hotkeyId6);
@@ -731,6 +970,7 @@ void BasicForm::ExitApp()
 	UnregisterHotKey(GetHWND(), hotkeyId4);
 	UnregisterHotKey(GetHWND(), hotkeyId3);
 	UnregisterHotKey(GetHWND(), hotkeyId1);
+	*/
 
 	isTreadState = false;
 	isTreadMessageState = false;
@@ -758,6 +998,217 @@ LRESULT BasicForm::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandl
 	return __super::OnClose(uMsg, wParam, lParam, bHandled);
 }
 
+/*
+门诊病历界面是否打开
+*/
+bool IsOutpatientMedicalRecordInterfaceOpen()
+{
+	DWORD pid = GetProcessIDByName(L"bmhip.exe");
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	if (pid == 0)
+	{
+		return false;
+	}
+
+	GetAllWindowState();
+
+	if (!illHisWndFindState)
+	{
+		return false;
+	}
+	else
+	{
+		if (illHisWnd > 0)
+		{
+			if (!::IsWindowVisible(illHisWnd))
+			{
+				return false;
+			}
+
+
+			if (prescribeWnd <= 0)
+			{
+				return false;
+			}
+
+			if (!::IsWindowVisible(prescribeWnd))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+void RequestDiseases()
+{
+
+	CWininetHttp netHttp;
+	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post,
+		"Content-Type:application/json;charset=utf-8", paraString);
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
+
+	if (!ret.empty())
+	{
+		Json::Reader reader;
+		Json::Value value;
+
+		if (reader.parse(ret, value))
+		{
+			if (value.isMember("errorMessage"))
+			{
+				if (value["errorMessage"].isString())
+				{
+					string errorMessage = value["errorMessage"].asString();
+				}
+			}
+		}
+	}
+}
+
+void BmhipThreadFun()
+{
+	time_t start = time(NULL);
+	time_t nowSecond = start;
+	while ((nowSecond - start) < 3)
+	{
+		nowSecond = time(NULL);
+	}
+
+	SetCursorPos(320, 280);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 280, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+
+	SetCursorPos(320, 320);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 320, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+
+	SetCursorPos(320, 360);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 360, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+	SetCursorPos(320, 400);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 400, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+	SetCursorPos(320, 430);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 430, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("主诉"), ocrMainSuit);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("现病史"), ocrIllnessHis);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("既往史"), ocrPastHis);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("个人史"), ocrPersonalHis);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("家族史"), ocrFamilyHis);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("过敏史"), ocrAllergyHis);
+
+
+	Json::Value rootPara;
+	rootPara["zs"] = ocrMainSuit;
+	rootPara["xbs"] = ocrIllnessHis;
+	rootPara["jws"] = ocrPastHis;
+	rootPara["allergyHis"] = ocrAllergyHis;
+	rootPara["jzs"] = ocrFamilyHis;
+	rootPara["grs"] = ocrPersonalHis;
+
+	std::string stdDiagnoseUrl = tool->GetAssistantDiagnoseUrl();
+	if (stdDiagnoseUrl.empty())
+	{
+		stdDiagnoseUrl = "http://medical.c2cloud.cn/kgms/ylkg/v1/diag_cdss/emr";
+	}
+
+	std::string url = stdDiagnoseUrl;
+	urlString = url;
+
+
+	Json::Value resultPara;
+	resultPara["emr"] = rootPara;
+
+	Json::Value config;
+	config["client"] = CefForm::strUserName.c_str();
+	config["is_push_mode"] = true;
+	config["push_emrs"] = true;
+	config["push_emr_count"] = 20;
+	resultPara["config"] = config;
+
+	paraString = resultPara.toStyledString();
+
+	log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("请求参数"), resultPara.toStyledString());
+
+	boost::thread requestThread(&RequestDiseases);
+	requestThread.detach();
+}
+
+/*
+自动获取湖南基层医疗卫生系统门诊医生工作站的病历信息
+*/
+void  BasicForm::GetBmhipInfo()
+{
+	DWORD pid = GetProcessIDByName(L"bmhip.exe");
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	//log.W(__FILE__, __LINE__, YLog::INFO, "bmhip.exe", pid);
+
+	if (pid == 0)
+	{
+		ShowBalloonTip(_T("请先打开湖南基层医疗卫生系统！"), _T("辅助诊断助手"));
+		return;
+	}
+
+	GetAllWindowState();
+
+	if (!illHisWndFindState)
+	{
+		ShowBalloonTip(_T("请先打开门诊医生工作站门诊病历界面！"), _T("辅助诊断助手"));
+		return;
+	}
+	else
+	{
+		if (illHisWnd > 0)
+		{
+			if (!::IsWindowVisible(illHisWnd))
+			{
+				ShowBalloonTip(_T("请确保门诊病历界面是否显示在桌面上！"), _T("辅助诊断助手"));
+				return;
+			}
+
+
+			if (prescribeWnd <= 0)
+			{
+				ShowBalloonTip(_T("请先打开病历界面填写患者的病历！"), _T("辅助诊断助手"));
+				return;
+			}
+
+			if (!::IsWindowVisible(prescribeWnd))
+			{
+				ShowBalloonTip(_T("请先打开患者的病历！"), _T("辅助诊断助手"));
+				return;
+			}
+
+			toastHwnd = shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 5000, m_hWnd);
+			log.W(__FILE__, __LINE__, YLog::INFO, "mainHisWnd", mainHisWnd);
+
+
+			RECT rect;
+			GetWindowRect(mainHisWnd, &rect);
+			::SetWindowPos(mainHisWnd, HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+			SetForegroundWindow(mainHisWnd);
+
+			boost::thread threadBmhip(&BmhipThreadFun);
+			threadBmhip.detach();
+		}
+	}
+}
 bool BasicForm::OnClicked(ui::EventArgs* msg)
 {
 	std::wstring name = msg->pSender->GetName();
@@ -790,12 +1241,6 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 	}
 	else if (name == L"proxy_setting2")
 	{
-		//MsgboxCallback cb = nbase::Bind(&BasicForm::OnMsgBoxCallback, this, std::placeholders::_1,"cef");
-		//ShowMsgBox(GetHWND(), cb, L"确认打开窗口！", false, L"提示", true, L"确定", true, L"取消", true);
-		//ShowMsgBox(GetHWND(), MsgboxCallback());
-
-		//MessageBox(NULL, _T("持续开发中，敬请期待！"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
-		//return true;
 		if (IsNetConnected())
 		{
 			if (windowMap.count(m_navUrl2) > 0 && windowMap[m_navUrl2] > 0)
@@ -823,9 +1268,6 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 	}
 	else if (name == L"proxy_setting3")
 	{
-		//MessageBox(NULL, _T("持续开发中，敬请期待！"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
-		//return true;
-
 		if (IsNetConnected())
 		{
 			if (windowMap.count(m_navUrl3) > 0 && windowMap[m_navUrl3] > 0)
@@ -853,22 +1295,28 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 	{
 		if (IsNetConnected())
 		{
-			if (windowMap.count(m_navUrl4) > 0 && windowMap[m_navUrl4] > 0)
+			if (IsOutpatientMedicalRecordInterfaceOpen())
 			{
-				::SendMessage(windowMap[m_navUrl4], WM_SYSCOMMAND, SC_RESTORE, NULL);
-				RECT rect;
-				GetWindowRect(windowMap[m_navUrl4], &rect);
-				::SetWindowPos(windowMap[m_navUrl4], HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+				GetBmhipInfo();
 			}
 			else
 			{
-				CefForm* window = new CefForm();
-				window->SetNavigateUrl(m_navUrl4);
-				window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
-				window->CenterWindow();
-				window->ShowWindow();
+				if (windowMap.count(m_navUrl4) > 0 && windowMap[m_navUrl4] > 0)
+				{
+					::SendMessage(windowMap[m_navUrl4], WM_SYSCOMMAND, SC_RESTORE, NULL);
+					RECT rect;
+					GetWindowRect(windowMap[m_navUrl4], &rect);
+					::SetWindowPos(windowMap[m_navUrl4], HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+				}
+				else
+				{
+					CefForm* window = new CefForm();
+					window->SetNavigateUrl(m_navUrl4);
+					window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+					window->CenterWindow();
+					window->ShowWindow();
+				}
 			}
-
 		}
 		else
 		{
@@ -951,244 +1399,6 @@ BOOL BasicForm::ShowBalloonTip(wstring szMsg, wstring szTitle, DWORD dwInfoFlags
 	wcscpy_s(m_trayIcon.szInfoTitle, szTitle.c_str());
 
 	return 0 != Shell_NotifyIcon(NIM_MODIFY, &m_trayIcon);
-}
-
-BOOL CALLBACK EnumChildProc(_In_ HWND hwnd, _In_ LPARAM lParam)
-{
-	char szTitle[MAX_PATH] = { 0 };
-	char szTitle1[MAX_PATH] = { 0 };
-	char szClass[MAX_PATH] = { 0 };
-	int nMaxCount = MAX_PATH;
-
-	LPSTR lpClassName = szClass;
-	LPSTR lpWindowName = szTitle;
-
-	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
-	GetClassNameA(hwnd, lpClassName, nMaxCount);
-
-	YLog log(YLog::INFO, "log.txt", YLog::ADD);
-
-	//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
-	//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-	//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-
-	string className = lpClassName;
-	string windowNameCurrent = lpWindowName;
-
-	if (className.find("WebOfficeWnd") != string::npos)
-	{
-		isNetOfficeWndFind = true;
-	}
-
-	if (windowNameCurrent.find("电子病历 - Internet Explorer") != string::npos)
-	{
-		hospitalWndFindState = true;
-	}
-
-	if (strcmp(lpClassName, "WindowsForms10.Window.8.app.0.33c0d9d") == 0)
-	{
-		//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
-		//log.W(__FILE__, __LINE__, YLog::INFO, "parent", GetParent(hwnd));
-		GetClassNameA(GetParent(hwnd), lpClassName, nMaxCount);
-		GetWindowTextA(GetParent(hwnd), lpWindowName, nMaxCount);
-		if (strcmp(lpWindowName, " 人卫inside") == 0)
-		{
-			rwResultWnd = GetParent(hwnd);
-		}
-		else
-		{
-			if (GetParent(hwnd) > 0)
-			{
-				rwWnd = GetParent(hwnd);
-			}
-
-		}
-		//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-		//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-	}
-	size_t found;
-	{
-		HWND parent = GetParent(hwnd);
-		if (parent)
-		{
-			LPSTR lpWindowName1 = szTitle1;
-
-			GetWindowTextA(parent, lpWindowName1, nMaxCount);
-			string windowName = lpWindowName1;
-			if (!windowName.empty())
-			{
-				found = windowName.find("门诊病历");
-				if (found != string::npos)
-				{
-					found = className.find("pbdw126");
-					if (found != string::npos)
-					{
-						string windowName = lpWindowName;
-						found = windowName.find("none");
-						if (found != string::npos)
-						{
-							//log.W(__FILE__, __LINE__, YLog::INFO, "hwnd", hwnd);
-							//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-							//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-							//print_window2(hwnd,1);
-
-							for (int id = 1; id < 0x00000F; id++)
-							{
-								HWND h = ::GetDlgItem(hwnd, id);
-								if (h != NULL)
-								{
-									int len = SendMessage(h, WM_GETTEXTLENGTH, 0, 0);
-									TCHAR* buffer = new TCHAR[len + 1];
-									::SendMessage(h, WM_GETTEXT, (WPARAM)(len + 1), (LPARAM)buffer);//第三个和第四个参数是缓存大小和缓存指针
-									wstring dd = buffer;
-
-									if (!dd.empty())
-									{
-
-										if (id == 10)
-										{
-											ocrMainSuit = nbase::UTF16ToUTF8(buffer);
-										}
-										else if (id == 11)
-										{
-
-											POINT point;
-											GetCursorPos(&point);
-											//log.W(__FILE__, __LINE__, YLog::INFO, "x", point.x);
-											//log.W(__FILE__, __LINE__, YLog::INFO, "y", point.y);
-
-											if (point.y == 280)
-											{
-												ocrIllnessHis = nbase::UTF16ToUTF8(buffer);
-											}
-											else if (point.y == 320)
-											{
-												ocrPastHis = nbase::UTF16ToUTF8(buffer);
-											}
-											else if (point.y == 360)
-											{
-												ocrPersonalHis = nbase::UTF16ToUTF8(buffer);
-											}
-											else if (point.y == 400)
-											{
-												ocrFamilyHis = nbase::UTF16ToUTF8(buffer);
-											}
-											else if (point.y == 430)
-											{
-												ocrAllergyHis = nbase::UTF16ToUTF8(buffer);
-											}
-											//log.W(__FILE__, __LINE__, YLog::INFO, "id", id);
-											//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("文本信息"), nbase::UTF16ToUTF8(buffer));
-										}
-
-
-									}
-								}
-							}
-						}
-
-					}
-
-				}
-			}
-		}
-	}
-
-	string windowName = lpWindowName;
-	if (!windowName.empty())
-	{
-		found = windowName.find("门诊病历");
-		if (found != string::npos)
-		{
-			illHisWnd = hwnd;
-			illHisWndFindState = true;
-		}
-
-		found = windowName.find("处方明细");
-		if (found != string::npos)
-		{
-			prescribeWnd = hwnd;
-		}
-
-		found = windowName.find("欢迎使用湖南省基层医疗卫生机构管理信息系统");
-		if (found != string::npos)
-		{
-			mainHisParentWnd = hwnd;
-
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-
-			if (strcmp(lpClassName, "FNHELP126") == 0)
-			{
-				HWND parent = GetParent(mainHisParentWnd);
-				//log.W(__FILE__, __LINE__, YLog::INFO, "parent", parent);
-
-				GetWindowTextA(parent, lpWindowName, nMaxCount);
-				GetClassNameA(parent, lpClassName, nMaxCount);
-				//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-				//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-				if (strcmp(lpClassName, "FNWND3126") == 0)
-				{
-					mainHisParentWnd = parent;
-				}
-			}
-
-		}
-
-		found = windowName.find("门诊医生工作站");
-		if (found != string::npos)
-		{
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-
-			HWND parent = GetParent(hwnd);
-
-			mainHisWnd = GetParent(parent);
-
-			GetWindowTextA(mainHisWnd, lpWindowName, nMaxCount);
-			GetClassNameA(mainHisWnd, lpClassName, nMaxCount);
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpWindowName", shared::tools::UtfToString(lpWindowName));
-			//log.W(__FILE__, __LINE__, YLog::INFO, "lpClassName", lpClassName);
-		}
-
-	}
-	return TRUE;
-}
-
-
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-	/*
-	Remarks
-	The EnumWindows function does not enumerate child windows,
-	with the exception of a few top-level windows owned by the
-	system that have the WS_CHILD style.
-	*/
-	char szTitle[MAX_PATH] = { 0 };
-	char szClass[MAX_PATH] = { 0 };
-	int nMaxCount = MAX_PATH;
-
-	LPSTR lpClassName = szClass;
-	LPSTR lpWindowName = szTitle;
-
-	GetWindowTextA(hwnd, lpWindowName, nMaxCount);
-	GetClassNameA(hwnd, lpClassName, nMaxCount);
-
-	EnumChildWindows(hwnd, EnumChildProc, lParam);
-
-	return TRUE;
-}
-
-void  GetAllWindowState()
-{
-	//每次遍历窗口前初始化各窗口标识状态
-	illHisWndFindState = false;
-	hospitalWndFindState = false;
-	prescribeWnd = 0;
-	illHisWnd = 0;
-	mainHisWnd = 0;
-	rwResultWnd = 0;
-	EnumWindows(EnumWindowsProc, 0);
 }
 
 /*
@@ -1453,6 +1663,21 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ResultForm::g_main_hwnd = GetHWND();
 			windowMap[*url] = result_form->GetHWND();
 
+		}
+	}
+	else if (uMsg == WM_RESULTWINDOWCLOSE)
+	{
+		HWND  hwnd = (HWND)wParam;
+
+		map<string, HWND>::iterator iter;//定义一个迭代指针iter
+		for (iter = windowMap.begin(); iter != windowMap.end(); iter++)
+		{
+			if (iter->second == hwnd)
+			{
+				iter->second = 0;
+
+				result_form = NULL;
+			}
 		}
 	}
 	else if (uMsg == WM_OPENRWCLIENT)

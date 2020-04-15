@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "HttpServerUtil.h"
 #include "cef_form.h"
+#include "login_form.h"
 #include "WininetHttp.h"
 #include <chrono>
 #include <cstdio>
@@ -11,6 +12,7 @@
 #include "XMLConfigTool.h"
 #include <tcpmib.h>
 #include <iphlpapi.h>
+
 #pragma comment(lib, "iphlpapi.lib") 
 
 using namespace httplib;
@@ -21,6 +23,56 @@ Server svr;
 
 HWND mainHwnd = 0;
 
+
+char* GetLocalPogramVersion()
+{
+	TCHAR pFilePath[MAX_PATH] = { 0 };
+	DWORD dwRet = GetModuleFileName(NULL, pFilePath, MAX_PATH);
+	if (dwRet == 0)
+	{
+		return "";
+	}
+
+	//获取版本信息大小
+	DWORD dwSize = GetFileVersionInfoSize(pFilePath, NULL);
+	if (dwSize == 0)
+	{
+		return "";
+	}
+
+	TCHAR *pBuf = (TCHAR *)malloc(dwSize + 1);
+	memset(pBuf, 0, dwSize + 1);
+
+	//获取版本信息
+	DWORD dwRtn = GetFileVersionInfo(pFilePath, NULL, dwSize, pBuf);
+	if (dwRtn == 0)
+	{
+		return "";
+	}
+
+	LPVOID lpBuffer = NULL;
+	UINT uLen = 0;
+
+	dwRtn = VerQueryValue(pBuf, TEXT("\\StringFileInfo\\080404b0\\FileVersion"), &lpBuffer, &uLen);
+	if (dwRtn == 0)
+	{
+		delete pBuf;
+		return "";
+	}
+
+	int iLen = 2 * wcslen((TCHAR*)lpBuffer);//CString,TCHAR汉字算一个字符，因此不用普通计算长度   
+	char* chRtn = (char *)malloc(iLen + 1);
+	memset(chRtn, 0, iLen + 1);
+	size_t  sLen;
+	wcstombs_s(&sLen, chRtn, iLen + 1, (TCHAR*)lpBuffer, iLen + 1);//转换成功返回为非负值
+
+	char* strVersion = (char *)malloc(iLen + 1);
+	memset(strVersion, 0, iLen + 1);
+	strcpy_s(strVersion, iLen + 1, chRtn);
+	delete pBuf;
+
+	return strVersion;
+}
 std::string dump_headers(const Headers &headers) {
 	std::string s;
 	char buf[BUFSIZ] = {0};
@@ -190,19 +242,34 @@ bool  CHttpServerUtil::StartServer()
 	}
 
 	svr.Get("/", [=](const Request & /*req*/, Response &res) {
+		res.set_content(shared::tools::UtfToString("欢迎您使用辅助诊断助手服务！"), "text/plain");
 	});
 
 	svr.Get("/userId", [=](const Request & /*req*/, Response &res) {
-
+		Json::Value result;
+		result["user_id"] = CefForm::strUserName.c_str();
+		res.set_content(result.toStyledString(), "application/json");
 
 	});
 
 	svr.Get("/version", [=](const Request & /*req*/, Response &res) {
+		Json::Value result;
+
+		result["app_version"] = versionNum;
+		result["app_time"] = GetCompileTime();
+
+		string version = GetLocalPogramVersion();
+		result["file_version"] = version;
+		result["app_name"] = shared::tools::UtfToString("辅助诊断助手（内部版）");
+
+		res.set_content(result.toStyledString(), "application/json");
 
 	});
 
 	svr.Get("/token", [=](const Request & /*req*/, Response &res) {
-
+		Json::Value result;
+		result["user_token"] = LoginForm::user_token.c_str();
+		res.set_content(result.toStyledString(), "application/json");
 
 	});
 
@@ -217,6 +284,71 @@ bool  CHttpServerUtil::StartServer()
 
 	svr.Post("/requestDiagnostic", [](const Request &req, Response &res) {
 
+		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+		if (req.body.empty())
+		{
+			Json::Value result;
+
+			result["error_code"] = 1;
+			result["message"] = shared::tools::UtfToString("数据内容为空！");
+			res.set_content(result.toStyledString(), "application/json");
+		}
+		else
+		{
+			Json::Reader reader;
+			Json::Value root;
+
+			// 使用boost库解析json
+			if (reader.parse(req.body, root))
+			{
+				Json::Value config;
+				config["client"] = CefForm::strUserName.c_str();
+
+				if (root.isNull())
+				{
+					root = config;
+				}
+				else
+				{
+					if (root.isObject())
+					{
+
+						Json::Value result;
+
+						result["config"] = config;
+						result["emr"] = root;
+
+						log.W(__FILE__, __LINE__, YLog::DEBUG, "requestDiagnostic", result.toStyledString());
+
+						res.set_content(result.toStyledString(), "application/json");
+
+						requestContent = result.toStyledString();
+
+						boost::thread requestThread(&RequestRemoteServer);
+						requestThread.detach();
+					}
+					else
+					{
+						root = config;
+						Json::Value result;
+
+						result["error_code"] = 2;
+						result["message"] = shared::tools::UtfToString("数据格式错误！");
+						res.set_content(result.toStyledString(), "application/json");
+					}
+					
+				}
+			}
+			else
+			{
+				Json::Value result;
+
+				result["error_code"] = 2;
+				result["message"] = shared::tools::UtfToString("数据格式错误！");
+				res.set_content(result.toStyledString(), "application/json");
+			}
+		}
 
 	});
 
@@ -243,8 +375,6 @@ bool  CHttpServerUtil::StartServer()
 	});
 
 	svr.set_base_dir("./resources");
-	//svr.set_base_dir("./cef/html");
-	//svr.set_base_dir("./cef", "/mount");
 
 	XMLConfigTool* tool = new XMLConfigTool();
 	unsigned int port = tool->GetLocalServerPort();
