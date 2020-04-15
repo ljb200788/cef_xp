@@ -411,6 +411,7 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
 
 								delete data;
+								data = NULL;
 							}
 						}
 
@@ -423,7 +424,7 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 							{
 								string rwname = result["params"]["name"].asString();
 								string category = "disease";
-								string info_attribute = shared::tools::GBKToUTF8("Õï¶ÏÒÀ¾Ý");
+								string info_attribute = shared::tools::GBKToUTF8("Õï¶Ï");
 
 								RWData* data = new RWData();
 								data->rw_rwname = rwname;
@@ -433,6 +434,7 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
 
 								delete data;
+								data = NULL;
 							}
 						}
 					}

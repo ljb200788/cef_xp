@@ -1105,6 +1105,7 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 								SendMessage(WM_SENDRWMESSAGE, (WPARAM)data, 0);
 
 								delete data;
+								data = NULL;
 							}
 						}
 

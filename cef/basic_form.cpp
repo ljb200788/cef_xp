@@ -982,11 +982,13 @@ void BasicForm::ExitApp()
 	if (serverUtil)
 	{
 		delete serverUtil;
+		serverUtil = NULL;
 	}
 
 	if (tool)
 	{
 		delete tool;
+		tool = NULL;
 	}
 
 	PostQuitMessage(0L);
