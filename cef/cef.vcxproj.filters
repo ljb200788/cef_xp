@@ -123,19 +123,16 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>资源文件</Filter>
-    </Image>
     <Image Include="CEF.ico">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="icon1.ico">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="disable.ico">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="doctor.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="disable1.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

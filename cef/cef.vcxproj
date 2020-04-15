@@ -223,9 +223,8 @@
   <ItemGroup>
     <Image Include="cef.ico" />
     <Image Include="disable.ico" />
+    <Image Include="disable1.ico" />
     <Image Include="doctor.ico" />
-    <Image Include="icon1.ico" />
-    <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\base\base.vcxproj">

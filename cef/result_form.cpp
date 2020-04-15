@@ -378,7 +378,7 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 			return;
 		}
 
-		::SendMessage(CefForm::g_main_hwnd, WM_OPENRWCLIENT, 0, 0);
+		//::SendMessage(CefForm::g_main_hwnd, WM_OPENRWCLIENT, 0, 0);
 
 		YLog log(YLog::INFO, "log.txt", YLog::ADD);
 		log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "callCsPlugin", params);

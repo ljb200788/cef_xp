@@ -12,7 +12,7 @@
 #include "HttpServerUtil.h"
 #include "result_form.h"
 #include <tlhelp32.h>
-
+#include "resource.h"
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "wininet.lib")
 #pragma comment(lib, "version.lib")
@@ -52,6 +52,9 @@ int iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 HMENU hMenu;
 
 Json::Value g_value;
+
+//定义托盘图标对象
+NOTIFYICONDATA m_trayIcon;
 
 volatile bool isTreadState = true;
 volatile bool isTreadMessageState = true;
@@ -1415,8 +1418,6 @@ void CheckRWKnowledgeResultFun(void*& data)
 
 		if (rwResultWnd > 0)
 		{
-			//::PostMessage(rwResultWnd, WM_SHOWWINDOW, true, SW_OTHERZOOM);
-
 			SendMessage(rwResultWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -1557,10 +1558,11 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 				btn_doctor->SetBkImage(L"doctor-disable.png");
 				btn_doctor1->SetBkImage(L"doctor-hi-disable.png");
 
-				m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(130));
+				ShowBalloonTip(L"已离线！", L"辅助诊断助手", NIIF_INFO, 3000);
+
+				m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(133));
 				Shell_NotifyIcon(NIM_MODIFY, &m_trayIcon);
 
-				ShowBalloonTip(L"已离线！", L"辅助诊断助手", NIIF_INFO, 3000);
 			}
 		}
 	}
@@ -1696,6 +1698,20 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 	}
+	else if (uMsg == WM_SETRWRECT)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+		GetAllWindowState();
+		if (rwResultWnd > 0)
+		{
+			if (IsWindowVisible(result_form->GetHWND()))
+			{
+				RECT rect;
+				GetWindowRect(result_form->GetHWND(), &rect);
+				::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left+ 320, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+			}
+		}
+	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
 
@@ -1731,7 +1747,7 @@ void BasicForm::AddTrayIcon()
 {
 	memset(&m_trayIcon, 0, sizeof(NOTIFYICONDATA));
 	m_trayIcon.cbSize = sizeof(NOTIFYICONDATA);
-	m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(130));
+	m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(133));
 	m_trayIcon.hWnd = m_hWnd;
 	lstrcpy(m_trayIcon.szTip, _T("辅助诊断助手"));
 	m_trayIcon.uCallbackMessage = WM_SHOWTASK;

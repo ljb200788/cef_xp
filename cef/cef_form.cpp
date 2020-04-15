@@ -357,7 +357,13 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 													std::string para = "window.CDSS_FE.rwWs.send(\'" + data + "\')\0";
 													log.W(__FILE__, __LINE__, YLog::DEBUG, shared::tools::GBKToUTF8("执行JS代码"), para);
 													cef_control_->GetBrowserHandler()->GetBrowser()->GetMainFrame()->ExecuteJavaScript(nbase::UTF8ToUTF16(para), L"", 0);
+
+													::SendMessage(g_main_hwnd, WM_SETRWRECT, (int)GetHWND(), 0);
 													break;
+												}
+												else
+												{
+													shared::Toast::ShowToast(L"暂无该条知识！", 3000, GetHWND());
 												}
 											}
 										}

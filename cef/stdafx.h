@@ -55,3 +55,4 @@ const std::string versionNum = "16";
 #define WM_SHOWTOASTWINDOW				WM_USER+125
 #define WM_USERQUIT						WM_USER+126
 #define WM_ONCLOSENOTICE				WM_USER+127
+#define WM_SETRWRECT					WM_USER+128

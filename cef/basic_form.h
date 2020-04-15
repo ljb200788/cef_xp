@@ -72,9 +72,6 @@ private:
 
 private:
 
-	//定义托盘图标对象
-	NOTIFYICONDATA m_trayIcon;
-
 	RECT		m_rtWindow;
 	int			m_iWindowWidth;
 	int			m_iWindowHeight;
