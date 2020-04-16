@@ -179,22 +179,23 @@ void ResultForm::InitWindow()
 	// 监听鼠标单击事件
 	m_pRoot->AttachBubbledEvent(ui::kEventClick, nbase::Bind(&ResultForm::OnClicked, this, std::placeholders::_1));
 
-	SetIcon(132);
+	SetIcon(107);
 	SetTaskbarTitle(L"辅助诊断分析页面");
 	cef_control_ = dynamic_cast<ui::CefControlBase*>(FindControl(L"cef_control"));
+	cef_control_dev_ = dynamic_cast<ui::CefControlBase*>(FindControl(L"cef_control_dev"));
 	if (cef_control_)
 	{
+		cef_control_->AttachDevTools(cef_control_dev_);
 		cef_control_->LoadURL(m_strUrl);
 		// 监听页面加载完毕通知
 		cef_control_->AttachLoadEnd(nbase::Bind(&ResultForm::OnLoadEnd, this, std::placeholders::_1));
 		cef_control_->AttachUrlChange(nbase::Bind(&ResultForm::OnUrlChange, this, std::placeholders::_1));
 	}
 
-	cef_control_dev_ = dynamic_cast<ui::CefControlBase*>(FindControl(L"cef_control_dev"));
-	if (cef_control_dev_)
-	{
+	if (!nim_cef::CefManager::GetInstance()->IsEnableOffsetRender())
 		cef_control_dev_->SetVisible(false);
-	}
+
+	cef_control_dev_->SetVisible(false);
 
 	SetForegroundWindow(GetHWND());
 
@@ -430,11 +431,13 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 								data->rw_rwname = rwname;
 								data->rw_category = category;
 								data->rw_info_attribute = info_attribute;
+								data->rw_mode = 1;
 
 								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
 
 								delete data;
 								data = NULL;
+
 							}
 						}
 					}
@@ -452,10 +455,35 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 								data->rw_rwname = rwname;
 								data->rw_category = category;
 								data->rw_info_attribute = info_attribute;
+								data->rw_mode = 1;
 
 								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
 
 								delete data;
+								data = NULL;
+							}
+						}
+					}
+					else if (type.find("treatmentOptions") != string::npos)
+					{
+						if (result.isMember("params"))
+						{
+							if (result["params"].isObject())
+							{
+								string rwname = result["params"]["name"].asString();
+								string category = "disease";
+								string info_attribute = shared::tools::GBKToUTF8("治疗");
+
+								RWData* data = new RWData();
+								data->rw_rwname = rwname;
+								data->rw_category = category;
+								data->rw_info_attribute = info_attribute;
+								data->rw_mode = 1;
+
+								::SendMessage(m_debug_wnd, WM_SENDRWMESSAGE, (WPARAM)data, 0);
+
+								delete data;
+								data = NULL;
 							}
 						}
 					}
@@ -501,6 +529,7 @@ void	ResultForm::OnUrlChange(const std::wstring& url)
 
 LRESULT	ResultForm::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+
 	if (wParam == VK_F5)
 	{
 		bHandled = TRUE;
@@ -513,13 +542,14 @@ LRESULT	ResultForm::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHa
 	if (wParam == VK_F12)
 	{
 		bHandled = TRUE;
-		if (cef_control_->IsAttachedDevTools())
+
+		if (cef_control_dev_->IsVisible())
 		{
-			cef_control_->DettachDevTools();
+			cef_control_dev_->SetVisible(false);
 		}
 		else
 		{
-			cef_control_->AttachDevTools(cef_control_dev_);
+			cef_control_dev_->SetVisible(true);
 		}
 	}
 

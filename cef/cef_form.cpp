@@ -135,6 +135,8 @@ void CefForm::InitWindow()
 	// 监听页面加载完毕通知
 	cef_control_->AttachLoadEnd(nbase::Bind(&CefForm::OnLoadEnd, this, std::placeholders::_1));
 
+	cef_control_->AttachLoadError(nbase::Bind(&CefForm::OnLoadError, this, std::placeholders::_1));
+
 	// 打开开发者工具
 	cef_control_->AttachDevTools(cef_control_dev_);
 
@@ -171,6 +173,27 @@ void CefForm::InitWindow()
 		{
 			btn_hidden_tool_->SetVisible(true);
 			btn_close_tool_->SetVisible(false);
+		}
+	}
+
+	if (m_strUrl.size() > 0)
+	{
+		if (cef_control_)
+		{
+			cef_control_->LoadURL(m_strUrl);
+			cef_control_->SetFocus();
+		}
+
+		if (m_strUrl.find("rwBrowser") != string::npos)
+		{
+			g_ptr_rw_cef = this;
+		}
+
+		g_windowMap[m_strUrl] = GetHWND();
+
+		if (g_main_hwnd != 0)
+		{
+			::SendMessage(g_main_hwnd, WM_CEFWINDOWOPEN, (WPARAM)&m_strUrl, (int)GetHWND());
 		}
 	}
 
@@ -363,7 +386,14 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 												}
 												else
 												{
-													shared::Toast::ShowToast(L"暂无该条知识！", 3000, GetHWND());
+													if (data != NULL)
+													{
+														if (data->rw_mode == 1)
+														{
+															HWND hwnd = shared::Toast::ShowToast(L"暂无该条知识！", 3000, GetHWND());
+															SetForegroundWindow(hwnd);
+														}
+													}
 												}
 											}
 										}
@@ -607,6 +637,17 @@ LRESULT CefForm::OnNcLButtonDbClick(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 	::SetFocus(GetHWND());
 	return __super::OnNcLButtonDbClick(uMsg, wParam, lParam, bHandled);
 }
+
+void CefForm::OnLoadError(int errorCode)
+{
+	std::string msg = " 该网址打开报错！";
+	std::string lastMsg = m_strUrl + shared::tools::GBKToUTF8(msg.c_str());
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	//log.W(filename(__FILE__), __LINE__, YLog::ERR, "OnLoadError", lastMsg);
+	log.W(filename(__FILE__), __LINE__, YLog::ERR, "errorCode", errorCode);
+}
+
 void CefForm::OnLoadEnd(int httpStatusCode)
 {
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);

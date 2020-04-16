@@ -67,6 +67,7 @@ private:
 	bool OnClicked(ui::EventArgs* msg);
 	bool OnNavigate(ui::EventArgs* msg);
 	void OnLoadEnd(int httpStatusCode);
+	void OnLoadError(int errorCode);
 
 private:
 	ui::CefControlBase* cef_control_;

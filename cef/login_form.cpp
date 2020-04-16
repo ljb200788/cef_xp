@@ -181,7 +181,7 @@ void LoginForm::InitWindow()
 
 	SetForegroundWindow(m_hWnd);
 
-	SetIcon(132);
+	SetIcon(107);
 	SetTaskbarTitle(L"µÇÂ¼");
 
 	INI ini("login.ini", true);

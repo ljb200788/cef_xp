@@ -975,6 +975,8 @@ void BasicForm::ExitApp()
 	UnregisterHotKey(GetHWND(), hotkeyId1);
 	*/
 
+	ShowWindow(SW_HIDE);
+
 	isTreadState = false;
 	isTreadMessageState = false;
 	isTreadRWKnowledgeState = false;
@@ -1241,7 +1243,6 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 		else
 		{
 			shared::Toast::ShowToast(_T("网络未连接！"), 3000, GetHWND());
-			//MessageBox(0, _T("网络未连接！"), _T("智能诊断精灵"), MB_OK);
 		}
 	}
 	else if (name == L"proxy_setting2")
@@ -1268,7 +1269,6 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 		else
 		{
 			shared::Toast::ShowToast(_T("网络未连接！"), 3000, GetHWND());
-			//MessageBox(0, _T("网络未连接！"), _T("智能诊断精灵"), MB_OK);
 		}
 	}
 	else if (name == L"proxy_setting3")
@@ -1348,6 +1348,10 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 				window->ShowWindow();
 			}
 		}
+		else
+		{
+			shared::Toast::ShowToast(_T("网络未连接！"), 3000, GetHWND());
+		}
 
 	}
 	else if (name == L"proxy_setting6")
@@ -1422,6 +1426,29 @@ void CheckRWKnowledgeResultFun(void*& data)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			SetForegroundWindow(rwResultWnd);
+			return;
+		}
+	}
+}
+
+void CheckRWKnowledgeSetWindowRect()
+{
+	while (true)
+	{
+		GetAllWindowState();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		if (rwResultWnd > 0)
+		{
+			if (result_form)
+			{
+				if (IsWindowVisible(result_form->GetHWND()))
+				{
+					RECT rect;
+					GetWindowRect(result_form->GetHWND(), &rect);
+					::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 320, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+				}
+			}
 			return;
 		}
 	}
@@ -1700,17 +1727,14 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uMsg == WM_SETRWRECT)
 	{
-		std::this_thread::sleep_for(std::chrono::seconds(2));
-		GetAllWindowState();
-		if (rwResultWnd > 0)
-		{
-			if (IsWindowVisible(result_form->GetHWND()))
-			{
-				RECT rect;
-				GetWindowRect(result_form->GetHWND(), &rect);
-				::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left+ 320, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-			}
-		}
+
+		boost::thread rwThread(&CheckRWKnowledgeSetWindowRect);
+		rwThread.detach();
+
+	}
+	else if (uMsg == WM_ONCLOSENOTICE)
+	{
+		UpdateHideStateNoticeMenu();
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
