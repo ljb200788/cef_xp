@@ -379,6 +379,13 @@ void	ResultForm::OnLoadEnd(int httpStatusCode)
 			return;
 		}
 
+		DWORD pid = GetProcessIDByName(L"RWKnowledge.exe");
+		if (pid == 0)
+		{
+			HWND hwnd = shared::Toast::ShowToast(L"请先启动人卫客户端！", 3000, GetHWND());
+			SetForegroundWindow(hwnd);
+			return;
+		}
 		//::SendMessage(CefForm::g_main_hwnd, WM_OPENRWCLIENT, 0, 0);
 
 		YLog log(YLog::INFO, "log.txt", YLog::ADD);
