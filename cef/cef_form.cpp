@@ -43,7 +43,6 @@ CefForm::CefForm()
 	m_bWndClosed = false;
 	m_bNeedMax = true;
 	m_bNeedHidden = false;
-
 	m_hMainWnd = 0;
 	m_strUrl = "";
 	m_question = "";
@@ -147,9 +146,9 @@ void CefForm::InitWindow()
 
 	label_Title_ = dynamic_cast<ui::Label*>(FindControl(L"title"));
 
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (!m_strUrl.empty())
 	{
-		YLog log(YLog::INFO, "log.txt", YLog::ADD);
 		log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("ÍøÖ·"), m_strUrl);
 		cef_control_->LoadURL(m_strUrl);
 	}

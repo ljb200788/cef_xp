@@ -13,6 +13,8 @@
 #include "result_form.h"
 #include <tlhelp32.h>
 #include "resource.h"
+#include "login_form.h"
+
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "wininet.lib")
 #pragma comment(lib, "version.lib")
@@ -1604,6 +1606,19 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 	}
+	else if (uMsg == WM_CEFWINDOWCLOSE)
+	{
+		HWND  hwnd = (HWND)wParam;
+
+		map<string, HWND>::iterator iter;//定义一个迭代指针iter
+		for (iter = windowMap.begin(); iter != windowMap.end(); iter++)
+		{
+			if (iter->second == hwnd)
+			{
+				iter->second = 0;
+			}
+		}
+	}
 	else if (uMsg == WM_OPENEXISTCEFWINDOW)
 	{
 		HWND   hwnd = (HWND)wParam;
@@ -1731,6 +1746,16 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		boost::thread rwThread(&CheckRWKnowledgeSetWindowRect);
 		rwThread.detach();
 
+	}
+	else if (uMsg == WM_MODIFYPASSWORD)
+	{
+		boost::this_thread::sleep(boost::posix_time::seconds(5));
+
+		GetLoginInfo();
+	}
+	else if (uMsg == WM_SHOWTOASTWINDOW)
+	{
+		toastHwnd = shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 10000, NULL);
 	}
 	else if (uMsg == WM_ONCLOSENOTICE)
 	{
