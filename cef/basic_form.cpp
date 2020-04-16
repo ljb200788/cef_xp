@@ -1446,9 +1446,18 @@ void CheckRWKnowledgeSetWindowRect()
 			{
 				if (IsWindowVisible(result_form->GetHWND()))
 				{
+					
 					RECT rect;
 					GetWindowRect(result_form->GetHWND(), &rect);
-					::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 320, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+					if (rect.right > iScreenWidth)
+					{
+						::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 120, rect.top + 50, iScreenWidth - rect.left - 150, rect.bottom - rect.top - 50, SWP_NOACTIVATE);
+					}
+					else
+					{
+						::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 120, rect.top + 50, rect.right - rect.left - 120, rect.bottom - rect.top - 50, SWP_NOACTIVATE);
+					}
 				}
 			}
 			return;
