@@ -177,6 +177,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cef_form.h" />
+    <ClInclude Include="crashdump.h" />
     <ClInclude Include="httplib.h" />
     <ClInclude Include="HttpServerUtil.h" />
     <ClInclude Include="INI.h" />
@@ -199,6 +200,7 @@
   <ItemGroup>
     <ClCompile Include="basic_form.cpp" />
     <ClCompile Include="cef_form.cpp" />
+    <ClCompile Include="crashdump.cpp" />
     <ClCompile Include="HttpServerUtil.cpp" />
     <ClCompile Include="login_form.cpp" />
     <ClCompile Include="main.cpp" />
