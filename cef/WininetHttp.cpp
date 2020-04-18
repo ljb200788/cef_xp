@@ -48,7 +48,16 @@ const std::string CWininetHttp::RequestJsonInfo(const std::string& lpUrl,
 		std::string strHostName = "";
 		std::string strPageName = "";
 
-		ParseURLWeb(lpUrl, strHostName, strPageName, port);
+		bool isHttps = false;
+		if (lpUrl.find("https") != string::npos)
+		{
+			isHttps = true;
+			ParseHTTPSURLWeb(lpUrl, strHostName, strPageName, port);
+		}
+		else
+		{
+			ParseURLWeb(lpUrl, strHostName, strPageName, port);
+		}
 		printf("lpUrl:%s,\nstrHostName:%s,\nstrPageName:%s,\nport:%d\n", lpUrl.c_str(), strHostName.c_str(), strPageName.c_str(), (int)port);
 
 		m_hConnect = InternetConnectA(m_hSession, strHostName.c_str(), port, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
@@ -67,8 +76,14 @@ const std::string CWininetHttp::RequestJsonInfo(const std::string& lpUrl,
 		{
 			strRequestType = "POST";
 		}
-
-		m_hRequest = HttpOpenRequestA(m_hConnect, strRequestType.c_str(), strPageName.c_str(), "HTTP/1.1", NULL, NULL, INTERNET_FLAG_RELOAD, NULL);
+		if (isHttps)
+		{
+			m_hRequest = HttpOpenRequestA(m_hConnect, strRequestType.c_str(), strPageName.c_str(), "HTTP/1.1", NULL, NULL, INTERNET_FLAG_SECURE, NULL);
+		}
+		else
+		{
+			m_hRequest = HttpOpenRequestA(m_hConnect, strRequestType.c_str(), strPageName.c_str(), "HTTP/1.1", NULL, NULL, INTERNET_FLAG_RELOAD, NULL);
+		}
 		if (NULL == m_hRequest)
 		{
 			throw Hir_InitErr;
@@ -153,6 +168,39 @@ void CWininetHttp::ParseURLWeb(std::string strUrl, std::string& strHostName, std
 	strPageName = strTemp.substr(nPos, strTemp.size() - nPos);
 }
 
+void CWininetHttp::ParseHTTPSURLWeb(std::string strUrl, std::string & strHostName, std::string & strPageName, WORD & sPort)
+{
+	sPort = 443;
+	string strTemp(strUrl);
+	std::size_t nPos = strTemp.find("https://");
+	if (nPos != std::string::npos)
+	{
+		strTemp = strTemp.substr(nPos + 8, strTemp.size() - nPos - 8);
+	}
+
+	nPos = strTemp.find('/');
+	if (nPos == std::string::npos)    //没有找到
+	{
+		strHostName = strTemp;
+	}
+	else
+	{
+		strHostName = strTemp.substr(0, nPos);
+	}
+
+	std::size_t nPos1 = strHostName.find(':');
+	if (nPos1 != std::string::npos)
+	{
+		std::string strPort = strTemp.substr(nPos1 + 1, strHostName.size() - nPos1 - 1);
+		strHostName = strHostName.substr(0, nPos1);
+		sPort = (WORD)atoi(strPort.c_str());
+	}
+	if (nPos == std::string::npos)
+	{
+		return;
+	}
+	strPageName = strTemp.substr(nPos, strTemp.size() - nPos);
+}
 // 关闭句柄 [3/14/2017/shike]
 void CWininetHttp::Release()
 {

@@ -55,6 +55,8 @@ protected:
 	// 解析URL地址 [3/14/2017/shike]
 	void ParseURLWeb(std::string strUrl, std::string& strHostName, std::string& strPageName, WORD& sPort);
 
+	void ParseHTTPSURLWeb(std::string strUrl, std::string& strHostName, std::string& strPageName, WORD& sPort);
+
 	// UTF-8转为GBK2312 [3/14/2017/shike]
 	char* UtfToGbk(const char* utf8);
 
