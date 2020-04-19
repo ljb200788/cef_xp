@@ -72,6 +72,8 @@ public:
 	std::string   GetQaPageUrl();
 
 	std::string   GetRegisterPageUrl();
+
+	std::string   GetHospitalName();
 	
 	unsigned int  GetTemplateIdValue();
 

@@ -136,7 +136,6 @@ BOOL IsNetConnected()
 
 void RunHttpServer()
 {
-
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (serverUtil->StartServer())
 	{
@@ -953,6 +952,9 @@ void BasicForm::InitWindow()
 			rwThread.detach();
 		}
 	}
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	log.W(__FILE__, __LINE__, YLog::DEBUG, "hospitalName", tool->GetHospitalName());
 
 	ShowDevTool();
 
