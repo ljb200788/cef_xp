@@ -66,18 +66,21 @@ volatile bool isTreadRecordState = true;
 bool  isVKSpacePressState = false;
 bool  isNetOfficeWndFind = false;
 
-int hotkeyId8 = 1;
-int hotkeyId7 = 2;
-int hotkeyId6 = 3;
-int hotkeyId5 = 4;
-int hotkeyId4 = 5;
-int hotkeyId3 = 6;
-int hotkeyId2 = 7;
-int hotkeyId1 = 8;
+int hotkeyId9 = 9;
+int hotkeyId8 = 8;
+int hotkeyId7 = 7;
+int hotkeyId6 = 6;
+int hotkeyId5 = 5;
+int hotkeyId4 = 4;
+int hotkeyId3 = 3;
+int hotkeyId2 = 2;
+int hotkeyId1 = 1;
 
 CHttpServerUtil* serverUtil = new CHttpServerUtil();
 
-std::map<string, HWND> windowMap;
+//剪切板内容
+string clipboardText = "";
+map<string, HWND> windowMap;
 
 string paraString = "";
 string urlString = "";
@@ -766,6 +769,316 @@ void CheckRWKnowledgeFun(void*& data)
 	}
 }
 
+string  GetClipboardText()
+{
+
+	keybd_event(VK_CONTROL, 0, 0, 0);
+	keybd_event('A', 0, 0, 0);
+	keybd_event('A', 0, KEYEVENT_KEYUP, 0);
+	keybd_event(VK_CONTROL, 0, KEYEVENT_KEYUP, 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(80));
+
+	keybd_event(VK_CONTROL, 0, 0, 0);
+	keybd_event('C', 0, 0, 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(80));
+	keybd_event('C', 0, KEYEVENT_KEYUP, 0);
+	keybd_event(VK_CONTROL, 0, KEYEVENT_KEYUP, 0);
+
+	std::string  content = "";
+	if (OpenClipboard(NULL))//打开剪贴板  
+	{
+		if (IsClipboardFormatAvailable(CF_TEXT))//判断格式是否是我们所需要  
+		{
+			HANDLE hClip;
+			char* pBuf;
+
+			//读取数据  
+			hClip = GetClipboardData(CF_TEXT);
+			pBuf = (char*)GlobalLock(hClip);
+			content = pBuf;
+			GlobalUnlock(hClip);
+		}
+		CloseClipboard();
+	}
+
+	return content;
+}
+
+void RequestDiseases()
+{
+
+	CWininetHttp netHttp;
+	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post,
+		"Content-Type:application/json;charset=utf-8", paraString);
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
+
+	if (!ret.empty())
+	{
+		Json::Reader reader;
+		Json::Value value;
+
+		if (reader.parse(ret, value))
+		{
+			if (value.isMember("errorMessage"))
+			{
+				if (value["errorMessage"].isString())
+				{
+					string errorMessage = value["errorMessage"].asString();
+					::SendMessage(CefForm::g_main_hwnd, WM_SHOWREQUESTTOASTWINDOW, (WPARAM)&errorMessage, NULL);
+				}
+				else if (value.isMember("error"))
+				{
+					if (value["error"].isArray())
+					{
+						for (int i = 0; i < value["error"].size(); i++)
+						{
+							log.W(__FILE__, __LINE__, YLog::INFO, "ret", value["error"].size());
+							if (value["error"][0].isObject())
+							{
+								if (value["error"][0].isMember("content"))
+								{
+									log.W(__FILE__, __LINE__, YLog::INFO, "ret", value["error"][0]["content"].asString());
+									string content = value["error"][0]["content"].asString();
+									::SendMessage(CefForm::g_main_hwnd, WM_SHOWREQUESTTOASTWINDOW, (WPARAM)&content, NULL);
+								}
+							}
+						}
+
+					}
+				}
+			}
+		}
+	}
+}
+void SetWordFocusAndGetWordText()
+{
+	//int ret = MessageBox(NULL, _T("是否进行辅助诊断？"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_YESNO | MB_ICONQUESTION);
+	//if (ret == IDNO)
+	//{
+	//	return;
+	//}
+
+	isNetOfficeWndFind = false;
+	//EnumWindows(EnumWindowsProc, 0);
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	if (isNetOfficeWndFind)
+	{
+		log.W(__FILE__, __LINE__, YLog::INFO, "isNetOfficeWndFind", shared::tools::UtfToString("打开了控件页面"));
+	}
+	else
+	{
+		//log.W(__FILE__, __LINE__, YLog::INFO, "isNetOfficeWndFind", shared::tools::UtfToString("请打开控件页面"));
+		//return;
+	}
+
+	if (OpenClipboard(NULL))//打开剪贴板  
+	{
+		EmptyClipboard();//清空剪切板
+		CloseClipboard();
+	}
+
+
+	for (int i = 0; i < 5; i++)
+	{
+		SetCursorPos(1000, 650);
+		mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 1000, 650, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
+	clipboardText = GetClipboardText();
+
+	mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 1000, 500, 0, 0);
+}
+
+void GetWordContentThreadFun()
+{
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	string content = clipboardText;
+	if (!content.empty())
+	{
+		shared::tools::deleteAllMark(content, " ");
+		shared::tools::deleteAllMark(content, "\r\n");
+		log.W(__FILE__, __LINE__, YLog::DEBUG, "content", shared::tools::UtfToString(content));
+
+		string	zs_str = "";
+		string	xbs_str = "";
+		string	jws_str = "";
+		string	grs_str = "";
+		string	jzs_str = "";
+		string	hys_str = "";
+		string	tgjc_str = "";
+		string	fzjc_str = "";
+
+		std::string zs = "主诉";
+		size_t pos_zs = content.find(zs);
+		if (pos_zs != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "zs", pos_zs);
+		}
+		else
+		{
+			pos_zs = 0;
+		}
+
+		std::string xbs = "现病史";
+		size_t pos_xbs = content.find(xbs);
+		if (pos_xbs != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "xbs", pos_xbs);
+
+			zs_str = shared::tools::UtfToString(content.substr(pos_zs, (pos_xbs - pos_zs)));
+			shared::tools::deleteAllMark(zs_str, shared::tools::UtfToString("主诉"));
+
+			//log.W(__FILE__, __LINE__, YLog::INFO, "zs_str", shared::tools::UtfToString(content.substr(pos_zs, (pos_xbs - pos_zs))));
+		}
+		else
+		{
+			pos_xbs = 0;
+		}
+
+		std::string jws = "既往史";
+		size_t pos_jws = content.find(jws);
+		if (pos_jws != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "jws", pos_jws);
+
+			xbs_str = shared::tools::UtfToString(content.substr(pos_xbs, (pos_jws - pos_xbs)));
+			shared::tools::deleteAllMark(xbs_str, shared::tools::UtfToString("现病史"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "xbs_str", shared::tools::UtfToString(content.substr(pos_xbs, (pos_jws - pos_xbs))));
+		}
+		else
+		{
+			pos_jws = 0;
+		}
+
+		std::string grs = "个人史";
+		size_t pos_grs = content.find(grs);
+		if (pos_grs != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "grs", pos_grs);
+
+			jws_str = shared::tools::UtfToString(content.substr(pos_jws, (pos_grs - pos_jws)));
+			shared::tools::deleteAllMark(jws_str, shared::tools::UtfToString("既往史"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "jws_str", shared::tools::UtfToString(content.substr(pos_jws, (pos_grs - pos_jws))));
+		}
+		else
+		{
+			pos_grs = 0;
+		}
+
+		std::string jzs = "家族史";
+		size_t pos_jzs = content.find(jzs);
+		if (pos_jzs != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "jzs", pos_jzs);
+
+			grs_str = shared::tools::UtfToString(content.substr(pos_grs, (pos_jzs - pos_grs)));
+			shared::tools::deleteAllMark(grs_str, shared::tools::UtfToString("个人史"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "grs_str", shared::tools::UtfToString(content.substr(pos_grs, (pos_jzs - pos_grs))));
+		}
+		else
+		{
+			pos_jzs = 0;
+		}
+
+		std::string hys = "婚育史";
+		size_t pos_hys = content.find(hys);
+		if (pos_hys != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "gms", pos_gms);
+
+			jzs_str = shared::tools::UtfToString(content.substr(pos_jzs, (pos_hys - pos_jzs)));
+			shared::tools::deleteAllMark(jzs_str, shared::tools::UtfToString("家族史"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "jzs_str", shared::tools::UtfToString(content.substr(pos_jzs, (pos_gms - pos_jzs))));
+		}
+		else
+		{
+			pos_hys = 0;
+		}
+
+		std::string tgjc = "体格检查";
+		size_t pos_tgjz = content.find(tgjc);
+		if (pos_tgjz != string::npos)
+		{
+			//log.W(__FILE__, __LINE__, YLog::INFO, "tgjc", pos_tgjz);
+
+			hys_str = shared::tools::UtfToString(content.substr(pos_hys, (pos_tgjz - pos_hys)));
+			shared::tools::deleteAllMark(hys_str, shared::tools::UtfToString("婚育史"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "gms_str", shared::tools::UtfToString(content.substr(pos_gms, (pos_tgjz - pos_gms))));
+			//tgjc_str = shared::tools::UtfToString(content.substr(pos_tgjz, (content.size() - pos_tgjz)));
+			//shared::tools::deleteAllMark(tgjc_str, shared::tools::UtfToString("体格检查"));
+			//log.W(__FILE__, __LINE__, YLog::INFO, "tgjc_str", shared::tools::UtfToString(content.substr(pos_tgjz, (content.size() - pos_tgjz))));
+		}
+		else
+		{
+			pos_tgjz = 0;
+		}
+
+		std::string fzjc = "辅助检查";
+		size_t pos_fzjz = content.find(fzjc);
+		if (pos_fzjz != string::npos)
+		{
+			tgjc_str = shared::tools::UtfToString(content.substr(pos_tgjz, (pos_fzjz - pos_tgjz)));
+			shared::tools::deleteAllMark(tgjc_str, shared::tools::UtfToString("体格检查"));
+
+			fzjc_str = shared::tools::UtfToString(content.substr(pos_fzjz, (content.size() - pos_tgjz)));
+			shared::tools::deleteAllMark(fzjc_str, shared::tools::UtfToString("辅助检查"));
+		}
+		else if (pos_tgjz > 0)
+		{
+			tgjc_str = shared::tools::UtfToString(content.substr(pos_tgjz, (content.size() - pos_tgjz)));
+			shared::tools::deleteAllMark(tgjc_str, shared::tools::UtfToString("体格检查"));
+		}
+
+
+		if (zs_str.empty())
+		{
+			zs_str = shared::tools::UtfToString(content);
+		}
+
+		Json::Value rootPara;
+		rootPara["zs"] = zs_str;
+		rootPara["xbs"] = xbs_str;
+		rootPara["jws"] = jws_str;
+		rootPara["hys"] = hys_str;
+		rootPara["jzs"] = jzs_str;
+		rootPara["grs"] = grs_str;
+		rootPara["tgjc"] = tgjc_str;
+		rootPara["otherExam"] = fzjc_str;
+
+		std::string stdDiagnoseUrl = tool->GetAssistantDiagnoseUrl();
+		if (stdDiagnoseUrl.empty())
+		{
+			stdDiagnoseUrl = "http://medical.c2cloud.cn/kgms/ylkg/v1/diag_cdss/emr";
+		}
+
+		std::string url = stdDiagnoseUrl;
+		urlString = url;
+
+
+		Json::Value resultPara;
+		resultPara["emr"] = rootPara;
+
+		Json::Value config;
+		config["client"] = CefForm::strUserName.c_str();
+		config["is_push_mode"] = true;
+		config["push_emrs"] = true;
+		config["push_emr_count"] = 20;
+		resultPara["config"] = config;
+
+		paraString = resultPara.toStyledString();
+
+		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("请求参数"), resultPara.toStyledString());
+
+		::SendMessage(CefForm::g_main_hwnd, WM_SHOWTOASTWINDOW, NULL, NULL);
+
+		boost::thread requestThread(&RequestDiseases);
+		requestThread.detach();
+	}
+
+}
 void WriteStartRegFile()
 {
 	ofstream fout("open.reg", ios::out);
@@ -962,6 +1275,8 @@ void BasicForm::InitWindow()
 
 	SetForegroundWindow(m_hWnd);
 
+	RegisterHotKey(GetHWND(), hotkeyId9, MOD_ALT, 'J');
+
 	ShowWindow(true);
 
 	::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
@@ -969,6 +1284,8 @@ void BasicForm::InitWindow()
 
 void BasicForm::ExitApp()
 {
+
+	UnregisterHotKey(GetHWND(), hotkeyId9);
 	/*
 	UnregisterHotKey(GetHWND(), hotkeyId8);
 	UnregisterHotKey(GetHWND(), hotkeyId7);
@@ -1050,33 +1367,6 @@ bool IsOutpatientMedicalRecordInterfaceOpen()
 		}
 	}
 	return true;
-}
-
-void RequestDiseases()
-{
-
-	CWininetHttp netHttp;
-	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post,
-		"Content-Type:application/json;charset=utf-8", paraString);
-	YLog log(YLog::INFO, "log.txt", YLog::ADD);
-	log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
-
-	if (!ret.empty())
-	{
-		Json::Reader reader;
-		Json::Value value;
-
-		if (reader.parse(ret, value))
-		{
-			if (value.isMember("errorMessage"))
-			{
-				if (value["errorMessage"].isString())
-				{
-					string errorMessage = value["errorMessage"].asString();
-				}
-			}
-		}
-	}
 }
 
 void BmhipThreadFun()
@@ -1310,21 +1600,50 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 			}
 			else
 			{
-				if (windowMap.count(m_navUrl4) > 0 && windowMap[m_navUrl4] > 0)
+				bool isWordTextMode = false;
+
+				DWORD pid_word = GetProcessIDByName(L"winword.exe");
+				DWORD pid_wps = GetProcessIDByName(L"wps.exe");
+
+				if (pid_word > 0 || pid_wps > 0)
 				{
-					::SendMessage(windowMap[m_navUrl4], WM_SYSCOMMAND, SC_RESTORE, NULL);
-					RECT rect;
-					GetWindowRect(windowMap[m_navUrl4], &rect);
-					::SetWindowPos(windowMap[m_navUrl4], HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+					int ret = MessageBox(GetHWND(), _T("请问是否需要使用Word病例诊断？"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_YESNO | MB_ICONQUESTION);
+					if (ret == IDYES)
+					{
+						ret = MessageBox(GetHWND(), _T("请问Word病例是否已在桌面上？"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_YESNO | MB_ICONQUESTION);
+						if (ret == IDYES)
+						{
+							SetWordFocusAndGetWordText();
+							if (!clipboardText.empty())
+							{
+								if (clipboardText.find("主诉") != string::npos)
+								{
+									isWordTextMode = true;
+									GetWordContentThreadFun();
+								}
+							}
+						}
+					}
 				}
-				else
+
+				if (!isWordTextMode)
 				{
-					CefForm* window = new CefForm();
-					window->SetNavigateUrl(m_navUrl4);
-					window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
-					window->CenterWindow();
-					window->ShowWindow();
-				}
+					if (windowMap.count(m_navUrl4) > 0 && windowMap[m_navUrl4] > 0)
+					{
+						::SendMessage(windowMap[m_navUrl4], WM_SYSCOMMAND, SC_RESTORE, NULL);
+						RECT rect;
+						GetWindowRect(windowMap[m_navUrl4], &rect);
+						::SetWindowPos(windowMap[m_navUrl4], HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+					}
+					else
+					{
+						CefForm* window = new CefForm();
+						window->SetNavigateUrl(m_navUrl4);
+						window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+						window->CenterWindow();
+						window->ShowWindow();
+					}
+				}				
 			}
 		}
 		else
@@ -1426,7 +1745,7 @@ void CheckRWKnowledgeResultFun(void*& data)
 
 		if (rwResultWnd > 0)
 		{
-			SendMessage(rwResultWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
+			//SendMessage(rwResultWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 			SetForegroundWindow(rwResultWnd);
@@ -1471,6 +1790,28 @@ void CheckRWKnowledgeSetWindowRect()
 LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 
+	if (uMsg == WM_HOTKEY)
+	{
+		if (hotkeyId9 == wParam)
+		{
+			SetWordFocusAndGetWordText();
+			if (!clipboardText.empty())
+			{
+				if (clipboardText.find("主诉") != string::npos)
+				{
+					GetWordContentThreadFun();
+				}
+				else
+				{
+					shared::Toast::ShowToast(_T("病历格式不正确！"), 3000, NULL);
+				}
+			}
+			else
+			{
+				shared::Toast::ShowToast(_T("请先打开病历文件！"), 3000, NULL);
+			}
+		}
+	}
 	//如果在图标中单击左键则还原
 	if (lParam == WM_LBUTTONDOWN)
 	{
@@ -1750,6 +2091,14 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			rwThread.detach();
 		}
 
+	}
+	else if (uMsg == WM_SHOWREQUESTTOASTWINDOW)
+	{
+		string* text = (string*)wParam;
+		if (text)
+		{
+			shared::Toast::ShowToast(nbase::UTF8ToUTF16(*text), 3000, NULL);
+		}
 	}
 	else if (uMsg == WM_SETRWRECT)
 	{
