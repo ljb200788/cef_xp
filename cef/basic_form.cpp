@@ -98,6 +98,12 @@ string  ocrPastHis = "";
 //个人史
 string  ocrPersonalHis = "";
 
+//体格检查
+string  tgjcHis = "";
+
+//辅助检查
+string  otherExamHis = "";
+
 
 BOOL IsNetConnected()
 {
@@ -333,6 +339,14 @@ BOOL CALLBACK EnumChildProc(_In_ HWND hwnd, _In_ LPARAM lParam)
 											else if (point.y == 430)
 											{
 												ocrAllergyHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 550)
+											{
+												tgjcHis = nbase::UTF16ToUTF8(buffer);
+											}
+											else if (point.y == 600)
+											{
+												otherExamHis = nbase::UTF16ToUTF8(buffer);
 											}
 											//log.W(__FILE__, __LINE__, YLog::INFO, "id", id);
 											//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("文本信息"), nbase::UTF16ToUTF8(buffer));
@@ -1405,6 +1419,16 @@ void BmhipThreadFun()
 	boost::this_thread::sleep(boost::posix_time::microseconds(500));
 	GetAllWindowState();
 
+	SetCursorPos(320, 550);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 550, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
+	SetCursorPos(320, 600);
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 320, 600, 0, 0);
+	boost::this_thread::sleep(boost::posix_time::microseconds(500));
+	GetAllWindowState();
+
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("主诉"), ocrMainSuit);
 	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("现病史"), ocrIllnessHis);
@@ -1421,6 +1445,9 @@ void BmhipThreadFun()
 	rootPara["allergyHis"] = ocrAllergyHis;
 	rootPara["jzs"] = ocrFamilyHis;
 	rootPara["grs"] = ocrPersonalHis;
+	rootPara["tgjc"] = tgjcHis;
+	rootPara["otherExam"] = otherExamHis;
+	rootPara["fzjc"] = otherExamHis;
 
 	std::string stdDiagnoseUrl = tool->GetAssistantDiagnoseUrl();
 	if (stdDiagnoseUrl.empty())
@@ -1496,7 +1523,7 @@ void  BasicForm::GetBmhipInfo()
 				return;
 			}
 
-			toastHwnd = shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 5000, m_hWnd);
+			toastHwnd = shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 10000, m_hWnd);
 			log.W(__FILE__, __LINE__, YLog::INFO, "mainHisWnd", mainHisWnd);
 
 
