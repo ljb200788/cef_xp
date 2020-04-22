@@ -1320,6 +1320,9 @@ void BasicForm::InitWindow()
 
 	ShowWindow(true);
 
+	string strVersion = GetLocalPogramVersion();
+	log.W(__FILE__, __LINE__, YLog::DEBUG, shared::tools::UtfToString("程序当前版本"), strVersion);
+
 	::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 	if (!IsNetConnected())
