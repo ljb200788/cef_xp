@@ -10,6 +10,7 @@
 #include "json\reader.h"
 #include "ylog.h"
 #include "INI.h"
+#include "md5.h"
 
 
 using namespace ui;
@@ -251,11 +252,13 @@ bool   LoginForm::UserLogin()
 			resultPara["userName"] = user_name;
 			resultPara["userPassword"] = password;
 
+			std::string pwd_md5 = md5(password);
+
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "login", Hr_Post, "Content-Type:application/json;charset=utf-8", resultPara.toStyledString());
 
 			YLog log(YLog::INFO, "log.txt", YLog::ADD);
-			//log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("登录参数"), resultPara.toStyledString());
+			log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("MD5密码"), pwd_md5);
 			log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("登录结果"), ret);
 
 

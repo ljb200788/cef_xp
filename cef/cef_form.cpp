@@ -405,6 +405,10 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 				}
 			}
 		}
+		else
+		{
+			shared::Toast::ShowToast(L"请配置人卫服务接口！", 3000, NULL);
+		}
 	}
 	else if (uMsg == WM_SENDQAMESSAGE)
 	{

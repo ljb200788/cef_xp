@@ -184,6 +184,7 @@
     <ClInclude Include="login_form.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="basic_form.h" />
+    <ClInclude Include="md5.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="result_form.h" />
     <ClInclude Include="RWData.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="HttpServerUtil.cpp" />
     <ClCompile Include="login_form.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="md5.cpp" />
     <ClCompile Include="result_form.cpp" />
     <ClCompile Include="RWData.cpp" />
     <ClCompile Include="stdafx.cpp">
