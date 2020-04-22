@@ -104,6 +104,24 @@ string  tgjcHis = "";
 //辅助检查
 string  otherExamHis = "";
 
+BOOL IsBaiduConnected()
+{
+	CWininetHttp netHttp;
+	std::string ret = netHttp.RequestJsonInfo("http://www.baidu.com/index.html", Hr_Get,
+		"Content-Type:text/html;charset=utf-8", "");
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	if (ret.empty())
+	{
+		log.W(__FILE__, __LINE__, YLog::INFO, "www.baidu.com", ret);
+		return FALSE;
+	}
+	else
+	{
+		log.W(__FILE__, __LINE__, YLog::DEBUG, "www.baidu.com", ret);
+	}
+
+	return TRUE;
+}
 
 BOOL IsNetConnected()
 {
@@ -140,6 +158,11 @@ BOOL IsNetConnected()
 	if (pUnknown)
 		pUnknown->Release();
 	CoUninitialize();
+
+	if (!bOnline)
+	{
+		return IsBaiduConnected();
+	}
 	return bOnline;
 }
 
@@ -669,6 +692,12 @@ void GetToolConfigThreadFun(void*& data)
 		bool isSuccess = false;
 		while (!isSuccess)
 		{
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			if (!IsNetConnected())
+			{
+				continue;
+			}
+
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(toolConfigUrl, Hr_Get,
 				"Content-Type:application/json;charset=utf-8", "{}");
@@ -689,8 +718,6 @@ void GetToolConfigThreadFun(void*& data)
 					}
 				}
 			}
-
-			std::this_thread::sleep_for(std::chrono::seconds(2));
 		}
 	}
 
@@ -1294,6 +1321,11 @@ void BasicForm::InitWindow()
 	ShowWindow(true);
 
 	::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+	if (!IsNetConnected())
+	{
+		shared::Toast::ShowToast(_T("网络未连接！"), 3000, NULL);
+	}
 }
 
 void BasicForm::ExitApp()
