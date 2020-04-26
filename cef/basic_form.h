@@ -67,6 +67,8 @@ public:
 
 	static const std::wstring	kClassName;
 
+	CefForm* m_hiddenWindow;
+
 	BOOL ShowBalloonTip(std::wstring szMsg, std::wstring szTitle, DWORD dwInfoFlags = NIIF_INFO, UINT uTimeout = 3000);
 
 
@@ -98,6 +100,5 @@ private:
 	std::string  m_navUrl5;
 	std::string  m_navUrl6;
 
-	CefForm* m_hiddenWindow;
 };
 

@@ -18,6 +18,7 @@ using namespace boost;
 
 string LoginForm::user_name = "";
 string LoginForm::user_token = "";
+string LoginForm::user_id = "";
 
 int GetLoginInfo()
 {
@@ -27,7 +28,8 @@ int GetLoginInfo()
 
 	ini.select("UserInfo");
 	string token = ini.get("UserInfo", "token", "");
-	LoginForm::user_name = ini.get("UserInfo", "username", "");
+	LoginForm::user_name = ini.get("UserInfo", "userName", "");
+	LoginForm::user_id = ini.get("UserInfo", "userId", "");
 
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "token", token);
@@ -44,45 +46,63 @@ int GetLoginInfo()
 		}
 		else
 		{
+
 			CWininetHttp netHttp;
-			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "token/validation/"+token, Hr_Post, "Content-Type:application/json;charset=utf-8", token);
-			log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("验证结果"), ret);
+			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "token/validation", Hr_Post, "Content-Type:text/plain;charset=utf-8", token);
 
-			Json::Reader reader;
-			Json::Value value;
+			log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("token有效验证"), ret);
 
-			if (reader.parse(ret, value))
+			Json::Reader reader_validate;
+			Json::Value value_validate;
+			if (reader_validate.parse(ret, value_validate))
 			{
-				if (value.isMember("code"))
+				if (value_validate.isMember("code"))
 				{
-					if (value["code"].isInt())
+					if (value_validate["code"].isInt())
 					{
-						int code = value["code"].asInt();
-						if (code == 10043)//token有效
+						int code = value_validate["code"].asInt();
+						if (code == 10001)//更新token
 						{
-							LoginForm::user_token = token;
 							return 1;
 						}
-						else if (code == 10042)//token过期更新token
+						else
 						{
-							//更新配置中的token
-							if (value.isMember("token"))
+							ret = netHttp.RequestJsonInfo(loginConfigUrl + "token/refresh", Hr_Post, "Content-Type:text/plain;charset=utf-8", token);
+							log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("token更新"), ret);
+
+							Json::Reader reader;
+							Json::Value value;
+
+							if (reader.parse(ret, value))
 							{
-								if (value["token"].isString())
+								if (value.isMember("code"))
 								{
-									string token = value["token"].asString();
+									if (value["code"].isInt())
+									{
+										int code = value["code"].asInt();
+										if (code == 10001)//更新token
+										{
+											//更新配置中的token
+											if (value.isMember("newToken"))
+											{
+												if (value["newToken"].isString())
+												{
+													string token = value["newToken"].asString();
 
-									LoginForm::user_token = token;
+													LoginForm::user_token = token;
 
-									ini.set("token", token);
-									ini.save("login.ini");
+													ini.set("token", token);
+													ini.save("login.ini");
+												}
+											}
+										}
+										else if (code == 10002)//token不存在
+										{
+
+										}
+									}
 								}
 							}
-							return 1;
-						}
-						else if (code == 10041)//token不存在
-						{
-
 						}
 					}
 				}
@@ -90,19 +110,9 @@ int GetLoginInfo()
 		}
 	}
 
-	// Loop through sections, keys and values
-	/*for (auto i : ini.sections) {
-	cout << "[" << i.first << "]" << endl;
-
-	//for(auto j = i.second->begin(); j != i.second->end(); j++)
-	for (auto j : *i.second) {
-	cout << "  " << j.first << "=" << j.second << endl;
-	}
-	}*/
-
-
 	return 0;
 }
+
 
 LoginForm::LoginForm()
 {
@@ -188,7 +198,7 @@ void LoginForm::InitWindow()
 	INI ini("login.ini", true);
 
 	ini.select("UserInfo");
-	string username = ini.get("UserInfo", "username", "");
+	string username = ini.get("UserInfo", "userName", "");
 	if (!username.empty())
 	{
 		user_name_edit_->SetText(nbase::UTF8ToUTF16(username));
@@ -250,9 +260,9 @@ bool   LoginForm::UserLogin()
 		{
 			Json::Value resultPara;
 			resultPara["userName"] = user_name;
-			resultPara["userPassword"] = password;
 
 			std::string pwd_md5 = md5(password);
+			resultPara["userPassword"] = pwd_md5;// password;
 
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "login", Hr_Post, "Content-Type:application/json;charset=utf-8", resultPara.toStyledString());
@@ -305,13 +315,25 @@ bool   LoginForm::UserLogin()
 										LoginForm::user_token = token;
 									}
 								}
+
+								string userId = "";
+								if (value.isMember("userId"))
+								{
+									if (value["userId"].isString())
+									{
+										userId = value["userId"].asString();
+										LoginForm::user_id = userId;
+									}
+								}
+								
 								INI::SAVE_FLAGS = INI::SAVE_PRUNE | INI::SAVE_PADDING_SECTIONS | INI::SAVE_SPACE_SECTIONS | INI::SAVE_SPACE_KEYS | INI::SAVE_TAB_KEYS | INI::SAVE_SEMICOLON_KEYS;
 
 								INI ini("login.ini", false);
 
 								ini.create("UserInfo");
 								ini.set("token", token);
-								ini.set("username", user_name);
+								ini.set("userName", user_name);
+								ini.set("userId", userId);
 
 								ini.save("login.ini");
 							}

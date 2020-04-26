@@ -45,6 +45,7 @@ public:
 
 	static string		user_name;
 	static string		user_token;
+	static string		user_id;
 
 private:
 	bool OnClicked(ui::EventArgs* msg);

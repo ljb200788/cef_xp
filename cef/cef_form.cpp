@@ -228,9 +228,11 @@ Json::Value  GetAliasArray(string term, string category)
 
 	if (!aliasUrl.empty())
 	{
+		string cdssToken = ",CDSSToken:" + LoginForm::user_token;
+
 		CWininetHttp netHttp;
 		std::string aliasRet = netHttp.RequestJsonInfo(aliasUrl, Hr_Post,
-			"Content-Type:application/json;charset=utf-8", alias_value.toStyledString());
+			"Content-Type:application/json;charset=utf-8" + cdssToken, alias_value.toStyledString());
 		log.W(__FILE__, __LINE__, YLog::DEBUG, "aliasRet", aliasRet);
 
 		Json::Reader aliasReader;
@@ -425,7 +427,17 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 
 	}
-
+	else if (uMsg == WM_REFRESHTOKEN)
+	{
+		string token = LoginForm::user_token;
+		if (!token.empty())
+		{
+			std::string para = "localStorage.setItem(\"CDSSToken\",\"";
+			para += token;
+			para += "\")";
+			cef_control_->GetBrowserHandler()->GetBrowser()->GetMainFrame()->ExecuteJavaScript(nbase::UTF8ToUTF16(para), L"", 0);
+		}
+	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
 
@@ -667,7 +679,7 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 		std::string para = "localStorage.setItem(\"isLogin\", \"true\")";
 		cef_control_->GetBrowserHandler()->GetBrowser()->GetMainFrame()->ExecuteJavaScript(nbase::UTF8ToUTF16(para), L"", 0);
 
-		para = "localStorage.setItem(\"token\",\"";
+		para = "localStorage.setItem(\"CDSSToken\",\"";
 		para += LoginForm::user_token;
 		para += "\")";
 		cef_control_->GetBrowserHandler()->GetBrowser()->GetMainFrame()->ExecuteJavaScript(nbase::UTF8ToUTF16(para), L"", 0);
@@ -697,6 +709,14 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 	if (!macAddress.empty())
 	{
 		tempUserName = macAddress;
+	}
+
+	if (tool->GetNeedLoginConfig())
+	{
+		if (!LoginForm::user_id.empty())
+		{
+			tempUserName = LoginForm::user_id;
+		}
 	}
 
 	if (!tempUserName.empty())
@@ -1175,6 +1195,9 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 	}
 
 	isLoadEnd = true;
+
+	delete tool;
+	tool = NULL;
 }
 
 void	CefForm::RefreshNavigateUrl()

@@ -1923,7 +1923,11 @@ public:
     boundary_ = boundary;
   }
 
-  bool is_valid() const { return is_valid_; }
+  bool is_valid() const { 
+	  if(is_valid_ <= 0) 
+		  return false; 
+	  return true;
+  }
 
   template <typename T, typename U>
   bool parse(const char *buf, size_t n, T content_callback, U header_callback) {
@@ -2080,8 +2084,8 @@ private:
 
   std::string buf_;
   size_t state_ = 0;
-  size_t is_valid_ = false;
-  size_t is_done_ = false;
+  size_t is_valid_ = 0;
+  size_t is_done_ = 0;
   size_t off_ = 0;
   std::string name_;
   MultipartFile file_;
@@ -3456,10 +3460,10 @@ inline bool Client::process_request(Stream &strm, const Request &req,
       };
     }
 
-    int dummy_status;
-    //if (!detail::read_content(strm, res, std::numeric_limits<size_t>::max(),dummy_status, req.progress, out)) {
-    //  return false;
-   // }
+    //int dummy_status;
+	//if (!detail::read_content(strm, res, std::numeric_limits<size_t>::max(),dummy_status, req.progress, out)) {
+	//  return false;
+	//}
   }
 
   return true;

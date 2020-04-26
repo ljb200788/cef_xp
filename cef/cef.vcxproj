@@ -181,6 +181,7 @@
     <ClInclude Include="httplib.h" />
     <ClInclude Include="HttpServerUtil.h" />
     <ClInclude Include="INI.h" />
+    <ClInclude Include="InternalMedicineTool.h" />
     <ClInclude Include="login_form.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="basic_form.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="util.h" />
     <ClInclude Include="version_form.h" />
     <ClInclude Include="WininetHttp.h" />
+    <ClInclude Include="writer.hpp" />
     <ClInclude Include="XMLConfigTool.h" />
     <ClInclude Include="ylog.h" />
   </ItemGroup>
@@ -203,6 +205,7 @@
     <ClCompile Include="cef_form.cpp" />
     <ClCompile Include="crashdump.cpp" />
     <ClCompile Include="HttpServerUtil.cpp" />
+    <ClCompile Include="InternalMedicineTool.cpp" />
     <ClCompile Include="login_form.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="md5.cpp" />

@@ -104,6 +104,9 @@ string  tgjcHis = "";
 //辅助检查
 string  otherExamHis = "";
 
+
+
+
 BOOL IsBaiduConnected()
 {
 	CWininetHttp netHttp;
@@ -185,6 +188,33 @@ void RunHttpServer()
 	}
 }
 
+/*
+定时刷新token
+*/
+void RefreshTokenThreadFun(void* data)
+{
+	while (isTreadMessageState)
+	{
+		try
+		{
+			//每隔120分钟检测一次
+			boost::this_thread::sleep(boost::posix_time::seconds(120 * 60));
+
+			GetLoginInfo();
+
+			BasicForm* ptrForm = (BasicForm*)data;
+			if (ptrForm != NULL)
+			{
+				::SendMessage(ptrForm->m_hiddenWindow->GetHWND(), WM_REFRESHTOKEN, 0, 0);
+			}
+
+		}
+		catch (exception e)
+		{
+
+		}
+	}
+}
 
 void ReceiveMessage(void*& data)
 {
@@ -223,8 +253,12 @@ void ReceiveMessage(void*& data)
 						ui::UiRect rect = ptrForm->GetPos();
 
 						SetWindowPos(ptrForm->GetHWND(), HWND_TOPMOST, iScreenWidth - rect.GetWidth() + 30, iScreenHeight / 2, rect.GetWidth(), rect.GetHeight(), SWP_SHOWWINDOW);
+						rect = ptrForm->GetPos();
 
-						isVisible = true;
+						if (rect.GetWidth() == 270 && rect.left == (iScreenWidth - rect.GetWidth() + 30))
+						{
+							isVisible = true;
+						}						
 					}
 
 				}
@@ -684,11 +718,12 @@ ui::Control* BasicForm::CreateControl(const std::wstring& pstrClass)
 
 void GetToolConfigThreadFun(void*& data)
 {
-	std::string toolConfigUrl = tool->GetToolConfigUrl();
-
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+	std::string toolConfigUrl = tool->GetToolConfigUrl();
 	if (!toolConfigUrl.empty())
 	{
+
 		bool isSuccess = false;
 		while (!isSuccess)
 		{
@@ -698,9 +733,11 @@ void GetToolConfigThreadFun(void*& data)
 				continue;
 			}
 
+			string cdssToken = ",CDSSToken:"+ LoginForm::user_token;
+
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(toolConfigUrl, Hr_Get,
-				"Content-Type:application/json;charset=utf-8", "{}");
+				"Content-Type:application/json;charset=utf-8"+ cdssToken, "{}");
 
 			log.W(__FILE__, __LINE__, YLog::DEBUG, "GetToolConfigThreadFun", ret);
 
@@ -716,6 +753,10 @@ void GetToolConfigThreadFun(void*& data)
 						g_value = value;
 						isSuccess = true;
 					}
+				}
+				else
+				{
+
 				}
 			}
 		}
@@ -845,12 +886,831 @@ string  GetClipboardText()
 	return content;
 }
 
+#include "writer.hpp"
+
+string&   replace_all_distinct(string&   str, const  string&  old_value, const   string&   new_value)
+{
+    for (string::size_type pos(0); pos != string::npos; pos += new_value.length())
+     {
+       if ((pos = str.find(old_value, pos)) != string::npos)
+          {
+       str.replace(pos, old_value.length(), new_value);
+  }
+         else { break; }
+     }
+    return   str;
+}
+/*
+void SimulateWordThreadFun()
+{
+
+	bool isNeedShowNext = false;
+
+	YLog log(YLog::INFO, "log_contagious_disease.txt", YLog::OVER);
+	csv::Writer foo("contagious_disease.csv");
+	foo.configure_dialect()
+		.delimiter(",")
+		.column_names("临床表现","疾病");
+
+	string lcbx_str = "";
+	string content_last = "";
+
+	for (int i = 0; i < 300; i++)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+
+		SetCursorPos(5, 70);
+		mouse_event(MOUSEEVENTF_LEFTDOWN, 5, 70, 0, 0);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+		SetCursorPos(1380, 820);
+		mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 1380, 820, 0, 0);
+
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+
+		SetCursorPos(500, 650);
+		mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 500, 650, 0, 0);
+	
+	
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	
+	
+		SetCursorPos(550, 360);
+		mouse_event(MOUSEEVENTF_LEFTDOWN, 550, 360, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		mouse_event(MOUSEEVENTF_LEFTUP, 550, 360, 0, 0);
+	
+	
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		std::string  content = "";
+		if (OpenClipboard(NULL))//打开剪贴板  
+		{
+			if (IsClipboardFormatAvailable(CF_TEXT))//判断格式是否是我们所需要  
+			{
+				HANDLE hClip;
+				char* pBuf;
+	
+				//读取数据  
+				hClip = GetClipboardData(CF_TEXT);
+				pBuf = (char*)GlobalLock(hClip);
+				content = pBuf;
+				GlobalUnlock(hClip);
+			}
+			CloseClipboard();
+		}
+
+		if(content.compare(content_last) == 0)
+		{
+			break;
+		}
+		else
+		{
+			content_last = content;
+		}
+	
+		if (isNeedShowNext)
+		{
+			
+			std::string fh = "【";
+			size_t pos_fh = content.find(fh);
+			if (pos_fh != string::npos)
+			{
+				isNeedShowNext = false;
+
+				string lcbx_all = lcbx_str + content.substr(0, pos_fh);
+				shared::tools::deleteAllMark(lcbx_all, " ");
+				shared::tools::deleteAllMark(lcbx_all, "\r\n");
+
+				lcbx_all = replace_all_distinct(lcbx_all,",","，");
+				foo.write_row(lcbx_all, "");
+
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("**临床表现**"), shared::tools::UtfToString(lcbx_all));
+			}
+			else
+			{
+				//log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("显示【临床表现】剩下内容"), shared::tools::UtfToString(content));
+			}
+		}
+		
+
+		{
+			std::string zj = "第一章";
+			size_t pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第一章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+			}
+
+			zj = "第二章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第三章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第四章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第四章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第五章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第五章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第六章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第六章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第七章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第七章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第八章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第八章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第九章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第九章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十一章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十一章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十二章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十二章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十三章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十三章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十四章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十四章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十五章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十五章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十六章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十六章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十七章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十七章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十八章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十八章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十九章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十九章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十一章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十一章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十二章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十二章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十三章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十三章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十四章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十四章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十五章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十五章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第二十六章";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十六章"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第一节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第一节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第三节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第四节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第四节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第五节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第五节"), shared::tools::UtfToString(content.substr(pos_zj,100)));
+
+			}
+			zj = "第六节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第六节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第七节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第七节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第八节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第八节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第九节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第九节"), shared::tools::UtfToString(content.substr(pos_zj,100)));
+
+			}
+			zj = "第十节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十一节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十一节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十二节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十二节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十三节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十三节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十四节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十四节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第十五节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十五节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十六节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十六节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十七节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十七节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十八节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十八节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第十九节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第十九节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十一节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十一节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十二节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十二节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十三节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十三节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十四节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十四节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第二十五节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十五节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第二十六节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十六节"), shared::tools::UtfToString(content.substr(pos_zj,100)));
+
+			}
+
+			zj = "第二十七节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十七节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第二十八节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十八节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第二十九节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第二十九节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+
+			zj = "第三十节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十一节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十一节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十二节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十二节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第三十三节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十三节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第三十四节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十四节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "第三十五节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十五节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十六节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十六节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十七节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十七节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十八节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十八节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "第三十九节";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("第三十九节"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "一、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("一、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+			}
+
+			zj = "二、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("二、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "三、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("三、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "四、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("四、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+
+			zj = "五、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("五、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "六、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("六、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "七、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("七、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "八、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("八、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "九、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("九、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+			zj = "十、";
+			pos_zj = content.find(zj);
+			if (pos_zj != string::npos)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("十、"), shared::tools::UtfToString(content.substr(pos_zj, 100)));
+
+			}
+		}
+		std::string lcbx = "【临床表现】";
+		size_t pos_lcbx = content.find(lcbx);
+		if (pos_lcbx != string::npos)
+		{
+			isNeedShowNext = true;
+			string lcbx_all = "";
+
+			std::string bfz = "【并发症】";
+			size_t pos_bfz = content.find(bfz);
+			if (pos_bfz != string::npos)
+			{
+				isNeedShowNext = false;
+				lcbx_all = content.substr(pos_lcbx, (pos_bfz - pos_lcbx));
+
+			}
+
+			if (isNeedShowNext)
+			{
+				std::string bfzhhyz = "【并发症和后遗症】";
+				size_t pos_bfzhhyz = content.find(bfzhhyz);
+				if (pos_bfzhhyz != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_bfzhhyz - pos_lcbx));
+
+				}
+			}
+			
+
+			if (isNeedShowNext)
+			{
+				std::string sysjc = "【实验室检查】";
+				size_t pos_sysjc = content.find(sysjc);
+				if (pos_sysjc != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_sysjc - pos_lcbx));
+				}
+			}
+			if (isNeedShowNext)
+			{
+				std::string sysjc = "【实验室诊断】";
+				size_t pos_sysjc = content.find(sysjc);
+				if (pos_sysjc != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_sysjc - pos_lcbx));
+				}
+			}
+			
+			if (isNeedShowNext)
+			{
+				std::string sysjc = "【实验室与辅助检查】";
+				size_t pos_sysjc = content.find(sysjc);
+				if (pos_sysjc != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_sysjc - pos_lcbx));
+				}
+			}
+
+			if (isNeedShowNext)
+			{
+				std::string sysjc = "【辅助检查】";
+				size_t pos_sysjc = content.find(sysjc);
+				if (pos_sysjc != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_sysjc - pos_lcbx));
+				}
+			}
+			
+			if (isNeedShowNext)
+			{
+				std::string zdhjbzd = "【诊断和鉴别诊断】";
+				size_t pos_zdhjbzd = content.find(zdhjbzd);
+				if (pos_zdhjbzd != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_zdhjbzd - pos_lcbx));
+				}
+			}
+
+			if (isNeedShowNext)
+			{
+				std::string zdhjbzd = "【诊断与鉴别诊断】";
+				size_t pos_zdhjbzd = content.find(zdhjbzd);
+				if (pos_zdhjbzd != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_zdhjbzd - pos_lcbx));
+				}
+			}
+
+			
+			if (isNeedShowNext)
+			{
+				std::string zd = "【诊断】";
+				size_t pos_zd = content.find(zd);
+				if (pos_zd != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_zd - pos_lcbx));
+				}
+			}
+
+
+
+			if (isNeedShowNext)
+			{
+				std::string zl = "【治疗】";
+				size_t pos_zl = content.find(zl);
+				if (pos_zl != string::npos)
+				{
+					isNeedShowNext = false;
+					lcbx_all = content.substr(pos_lcbx, (pos_zl - pos_lcbx));
+				}
+			}
+
+			if (!isNeedShowNext)
+			{
+				shared::tools::deleteAllMark(lcbx_all, " ");
+				shared::tools::deleteAllMark(lcbx_all, "\r\n");
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("**临床表现**"), shared::tools::UtfToString(lcbx_all));
+				lcbx_all = replace_all_distinct(lcbx_all, ",", "，");
+				foo.write_row(lcbx_all, "");
+			}
+			else
+			{
+				lcbx_str = content.substr(pos_lcbx, content.length());
+			}
+
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+	
+		keybd_event(VK_NEXT, 0, 0, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		keybd_event(VK_NEXT, 0, KEYEVENT_KEYUP, 0);
+		std::this_thread::sleep_for(std::chrono::milliseconds(80));
+	}
+	foo.close();
+
+}
+*/
 void RequestDiseases()
 {
+	string cdssToken = ",CDSSToken:" + LoginForm::user_token;
 
 	CWininetHttp netHttp;
 	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post,
-		"Content-Type:application/json;charset=utf-8", paraString);
+		"Content-Type:application/json;charset=utf-8"+ cdssToken, paraString);
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
 
@@ -872,7 +1732,7 @@ void RequestDiseases()
 				{
 					if (value["error"].isArray())
 					{
-						for (int i = 0; i < value["error"].size(); i++)
+						for (unsigned int i = 0; i < value["error"].size(); i++)
 						{
 							log.W(__FILE__, __LINE__, YLog::INFO, "ret", value["error"].size());
 							if (value["error"][0].isObject())
@@ -1307,6 +2167,12 @@ void BasicForm::InitWindow()
 		}
 	}
 
+	if (tool->GetNeedLoginConfig())
+	{
+		boost::thread tokenThread(boost::bind(&RefreshTokenThreadFun, (void*)this));
+		tokenThread.detach();
+	}
+
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(__FILE__, __LINE__, YLog::DEBUG, "hospitalName", tool->GetHospitalName());
 
@@ -1329,6 +2195,7 @@ void BasicForm::InitWindow()
 	{
 		shared::Toast::ShowToast(_T("网络未连接！"), 3000, NULL);
 	}
+
 }
 
 void BasicForm::ExitApp()
@@ -1358,6 +2225,20 @@ void BasicForm::ExitApp()
 	{
 		delete serverUtil;
 		serverUtil = NULL;
+	}
+
+	if (tool->GetNeedLoginConfig())
+	{
+		std::string loginConfigUrl = tool->GetLoginConfigUrl();
+		if (!loginConfigUrl.empty())
+		{
+			string cdssToken = ",CDSSToken:" + LoginForm::user_token;
+			CWininetHttp netHttp;
+			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "logout", Hr_Post, "Content-Type:application/json;charset=utf-8" + cdssToken, "");
+
+			YLog log(YLog::INFO, "log.txt", YLog::ADD);
+			log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("注销用户"), ret);
+		}
 	}
 
 	if (tool)
@@ -1574,6 +2455,7 @@ void  BasicForm::GetBmhipInfo()
 }
 bool BasicForm::OnClicked(ui::EventArgs* msg)
 {
+
 	std::wstring name = msg->pSender->GetName();
 
 	if (name == L"proxy_setting1")
@@ -2238,7 +3120,7 @@ BOOL DownloadFiles(LPCWSTR url, LPCWSTR downloadPath)
 
 void  BasicForm::SetToolBtnUrl()
 {
-	for (int i = 0; i < g_value.size(); i++)
+	for (unsigned int i = 0; i < g_value.size(); i++)
 	{
 		Json::Value item = g_value[i];
 		if (item.isObject())
