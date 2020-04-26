@@ -228,11 +228,10 @@ Json::Value  GetAliasArray(string term, string category)
 
 	if (!aliasUrl.empty())
 	{
-		string cdssToken = ",CDSSToken:" + LoginForm::user_token;
+		string cdssToken = "CDSSToken:" + LoginForm::user_token;
 
 		CWininetHttp netHttp;
-		std::string aliasRet = netHttp.RequestJsonInfo(aliasUrl, Hr_Post,
-			"Content-Type:application/json;charset=utf-8" + cdssToken, alias_value.toStyledString());
+		std::string aliasRet = netHttp.RequestJsonInfo(aliasUrl, Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", alias_value.toStyledString());
 		log.W(__FILE__, __LINE__, YLog::DEBUG, "aliasRet", aliasRet);
 
 		Json::Reader aliasReader;

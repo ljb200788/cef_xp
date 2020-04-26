@@ -28,6 +28,7 @@ int GetLoginInfo()
 
 	ini.select("UserInfo");
 	string token = ini.get("UserInfo", "token", "");
+	LoginForm::user_token = token;
 	LoginForm::user_name = ini.get("UserInfo", "userName", "");
 	LoginForm::user_id = ini.get("UserInfo", "userId", "");
 

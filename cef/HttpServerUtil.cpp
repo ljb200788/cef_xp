@@ -114,9 +114,10 @@ void RequestRemoteServer()
 		::SendMessage(mainHwnd, WM_SHOWTOASTWINDOW, NULL, NULL);
 	}
 
+	string cdssToken = "CDSSToken:" + LoginForm::user_token;
+
 	CWininetHttp netHttp;
-	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post,
-		"Content-Type:application/json;charset=utf-8", requestContent);
+	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", requestContent);
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
 }
