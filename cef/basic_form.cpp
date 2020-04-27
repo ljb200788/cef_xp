@@ -733,7 +733,11 @@ void GetToolConfigThreadFun(void*& data)
 				continue;
 			}
 
-			string cdssToken = "CDSSToken:"+LoginForm::user_token;
+			string cdssToken = "";
+			if (!LoginForm::user_token.empty())
+			{
+				cdssToken = "CDSSToken:" + LoginForm::user_token;
+			}
 
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(toolConfigUrl, Hr_Get,cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", "{}");
@@ -1705,7 +1709,11 @@ void SimulateWordThreadFun()
 */
 void RequestDiseases()
 {
-	string cdssToken = "CDSSToken:" + LoginForm::user_token;
+	string cdssToken = "";
+	if (!LoginForm::user_token.empty())
+	{
+		cdssToken = "CDSSToken:" + LoginForm::user_token;
+	}
 
 	CWininetHttp netHttp;
 	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", paraString);
@@ -2230,7 +2238,11 @@ void BasicForm::ExitApp()
 		std::string loginConfigUrl = tool->GetLoginConfigUrl();
 		if (!loginConfigUrl.empty())
 		{
-			string cdssToken = "CDSSToken:" + LoginForm::user_token;
+			string cdssToken = "";
+			if (!LoginForm::user_token.empty())
+			{
+				cdssToken = "CDSSToken:" + LoginForm::user_token;
+			}
 			CWininetHttp netHttp;
 			std::string ret = netHttp.RequestJsonInfo(loginConfigUrl + "logout", Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", "");
 

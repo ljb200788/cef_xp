@@ -114,7 +114,11 @@ void RequestRemoteServer()
 		::SendMessage(mainHwnd, WM_SHOWTOASTWINDOW, NULL, NULL);
 	}
 
-	string cdssToken = "CDSSToken:" + LoginForm::user_token;
+	string cdssToken = "";
+	if (!LoginForm::user_token.empty())
+	{
+		cdssToken = "CDSSToken:" + LoginForm::user_token;
+	}
 
 	CWininetHttp netHttp;
 	std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", requestContent);
