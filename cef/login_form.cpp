@@ -64,10 +64,6 @@ int GetLoginInfo()
 						int code = value_validate["code"].asInt();
 						if (code == 10001)//更新token
 						{
-							return 1;
-						}
-						else
-						{
 							ret = netHttp.RequestJsonInfo(loginConfigUrl + "token/refresh", Hr_Post, "Content-Type:text/plain;charset=utf-8", token);
 							log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("token更新"), ret);
 
@@ -83,6 +79,7 @@ int GetLoginInfo()
 										int code = value["code"].asInt();
 										if (code == 10001)//更新token
 										{
+
 											//更新配置中的token
 											if (value.isMember("newToken"))
 											{
@@ -96,6 +93,7 @@ int GetLoginInfo()
 													ini.save("login.ini");
 												}
 											}
+											return 1;
 										}
 										else if (code == 10002)//token不存在
 										{
@@ -104,7 +102,22 @@ int GetLoginInfo()
 									}
 								}
 							}
+							if (value_validate.isMember("isInvalid"))
+							{
+								if (value_validate["isInvalid"].isBool())
+								{
+									if (value_validate["isInvalid"].asBool())
+									{
+										
+									}
+									else
+									{
+										return 1;
+									}
+								}
+							}
 						}
+
 					}
 				}
 			}
