@@ -45,10 +45,6 @@ HWND  rwWnd = 0;
 //人卫查询结果句柄
 HWND  rwResultWnd = 0;
 
-// 获取屏幕大小
-int iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-int iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-
 //托盘菜单
 //win32程序使用的是HMENU，如果是MFC程序可以使用CMenu
 HMENU hMenu;
@@ -104,8 +100,9 @@ string  tgjcHis = "";
 //辅助检查
 string  otherExamHis = "";
 
-
-
+// 获取屏幕大小
+int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+int m_iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 BOOL IsBaiduConnected()
 {
@@ -545,9 +542,6 @@ std::wstring BasicForm::GetWindowClassName() const
 
 void BasicForm::AutoHiddenWindow(int iNum)
 {
-	//获取屏幕大小
-	iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-	iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	//RECT m_rtWindow;
 	GetWindowRect(m_hWnd, &m_rtWindow);
@@ -573,7 +567,7 @@ void BasicForm::AutoHiddenWindow(int iNum)
 	}
 
 	//bottom
-	if (m_rtWindow.top > 0 && m_rtWindow.bottom > (iScreenHeight - 50))
+	if (m_rtWindow.top > 0 && m_rtWindow.bottom > (m_iScreenHeight - 50))
 	{
 		// 获取窗口范围
 		GetWindowRect(m_hWnd, &m_rtWindow);
@@ -582,7 +576,7 @@ void BasicForm::AutoHiddenWindow(int iNum)
 	}
 
 	//right
-	if (m_rtWindow.right >= (iScreenWidth - 10) && m_rtWindow.left <= iScreenWidth - iNum && m_rtWindow.top > 0)
+	if (m_rtWindow.right >= (m_iScreenWidth - 10) && m_rtWindow.left <= m_iScreenWidth - iNum && m_rtWindow.top > 0)
 	{
 		// 获取窗口范围
 		GetWindowRect(m_hWnd, &m_rtWindow);
@@ -605,10 +599,6 @@ void BasicForm::AutoHiddenWindow(int iNum)
 
 void BasicForm::AutoShowWindow()
 {
-	// 获取屏幕大小
-	iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-	iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-
 	RECT m_rtWindow;
 	GetWindowRect(this->m_hWnd, &m_rtWindow);
 	m_iWindowWidth = m_rtWindow.right - m_rtWindow.left;
@@ -633,7 +623,7 @@ void BasicForm::AutoShowWindow()
 	}*/
 
 	// 向左弹出
-	while (m_rtWindow.right > iScreenWidth)
+	while (m_rtWindow.right > m_iScreenWidth)
 	{
 		// 移动窗口
 		MoveWindow(this->m_hWnd, m_rtWindow.left - 2, m_rtWindow.top, m_iWindowWidth, m_iWindowHeight, FALSE);
@@ -859,15 +849,17 @@ string  GetClipboardText()
 
 	keybd_event(VK_CONTROL, 0, 0, 0);
 	keybd_event('A', 0, 0, 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(80));
 	keybd_event('A', 0, KEYEVENT_KEYUP, 0);
 	keybd_event(VK_CONTROL, 0, KEYEVENT_KEYUP, 0);
-	std::this_thread::sleep_for(std::chrono::milliseconds(80));
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
 	keybd_event(VK_CONTROL, 0, 0, 0);
 	keybd_event('C', 0, 0, 0);
 	std::this_thread::sleep_for(std::chrono::milliseconds(80));
 	keybd_event('C', 0, KEYEVENT_KEYUP, 0);
 	keybd_event(VK_CONTROL, 0, KEYEVENT_KEYUP, 0);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
 	std::string  content = "";
 	if (OpenClipboard(NULL))//打开剪贴板  
@@ -2729,9 +2721,9 @@ void CheckRWKnowledgeSetWindowRect()
 					RECT rect;
 					GetWindowRect(result_form->GetHWND(), &rect);
 
-					if (rect.right > iScreenWidth)
+					if (rect.right > m_iScreenWidth)
 					{
-						::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 120, rect.top + 50, iScreenWidth - rect.left - 150, rect.bottom - rect.top - 50, SWP_NOACTIVATE);
+						::SetWindowPos(rwResultWnd, HWND_TOPMOST, rect.left + 120, rect.top + 50, m_iScreenWidth - rect.left - 150, rect.bottom - rect.top - 50, SWP_NOACTIVATE);
 					}
 					else
 					{

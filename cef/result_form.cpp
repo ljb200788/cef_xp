@@ -30,10 +30,9 @@ HWND ResultForm::g_main_hwnd = 0;
 
 const std::wstring ResultForm::kClassName = L"result";
 
-
 // 获取屏幕大小
-int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-int m_iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+int m_iScreenWidth_result = GetSystemMetrics(SM_CXSCREEN);
+int m_iScreenHeight_result = GetSystemMetrics(SM_CYSCREEN);
 
 ResultForm::ResultForm()
 {
@@ -89,12 +88,10 @@ void MoveWindowThreadNarrowFun(void*& data)
 		RECT rect;
 		GetWindowRect(ptrForm->GetHWND(), &rect);
 
-		// 获取屏幕大小
-		int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
 		while (true)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			if ((rect.left + 40 * i + 460) > m_iScreenWidth)
+			if ((rect.left + 40 * i + 460) > m_iScreenWidth_result)
 			{
 				return;
 			}
@@ -115,9 +112,9 @@ void MoveWindowFromRightThreadFun(void*& data)
 
 		ShowWindow(ptrForm->GetHWND(),SWP_SHOWWINDOW);
 
-		int top = (m_iScreenHeight - 630) / 2;
+		int top = (m_iScreenHeight_result - 630) / 2;
 
-		SetWindowPos(ptrForm->GetHWND(), HWND_TOP, m_iScreenWidth+50, top, 320, 630, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+		SetWindowPos(ptrForm->GetHWND(), HWND_TOP, m_iScreenWidth_result+50, top, 320, 630, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 		int i = 0;
 
 		RECT rect;
@@ -128,12 +125,12 @@ void MoveWindowFromRightThreadFun(void*& data)
 			i++;
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-			if ((rect.left - 20 * i + 440) < m_iScreenWidth)
+			if ((rect.left - 20 * i + 440) < m_iScreenWidth_result)
 			{
 				return;
 			}
 
-			int top = (m_iScreenHeight - 630) / 2;
+			int top = (m_iScreenHeight_result - 630) / 2;
 			SetWindowPos(ptrForm->GetHWND(), HWND_TOP, rect.left-20*i, top, 320, 630, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 		}
 	}
@@ -162,7 +159,7 @@ void MoveWindowThreadZoomFun(void*& data)
 
 			RECT rect1;
 			GetWindowRect(ptrForm->GetHWND(), &rect1);
-			if ((rect1.left + 550) <= m_iScreenWidth/2)
+			if ((rect1.left + 550) <= m_iScreenWidth_result/2)
 			{
 				return;
 			}

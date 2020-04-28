@@ -38,6 +38,10 @@ bool    isLoadEnd = false;
 
 const wstring CefForm::kClassName = L"Cef";
 
+// 获取屏幕大小
+int m_iScreenWidth_cef = GetSystemMetrics(SM_CXSCREEN);
+int m_iScreenHeight_cef = GetSystemMetrics(SM_CYSCREEN);
+
 CefForm::CefForm()
 {
 	m_bWndClosed = false;
@@ -958,20 +962,16 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 						}
 					}
 
-					//获取屏幕大小
-					int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-					int m_iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-					if (width >= (m_iScreenWidth - 100))
+					if (width >= (m_iScreenWidth_cef - 100))
 					{
-						width = m_iScreenWidth - 100;
+						width = m_iScreenWidth_cef - 100;
 					}
 
 					//根据参数定制化页面的默认大小
 					//if (width > 0 && height > 0)
 					//{
 					//	ui::UiRect rect = g_unique_window->GetPos();
-					//	MoveWindow(g_unique_window->GetHWND(), m_iScreenWidth-width-100, (m_iScreenHeight-height)/2, width, height, true);
+					//	MoveWindow(g_unique_window->GetHWND(), m_iScreenWidth_cef-width-100, (m_iScreenHeight_cef-height)/2, width, height, true);
 					//	g_unique_window->ShowWindow();
 					//}
 
