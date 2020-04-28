@@ -178,7 +178,7 @@ void RunHttpServer()
 	}
 	else
 	{
-		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("启动失败,端口已被占用"));
+		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("Http中转服务启动失败!"));
 	}
 
 	if (serverUtil)
@@ -1953,7 +1953,7 @@ void GetWordContentThreadFun()
 		rootPara["jzs"] = jzs_str;
 		rootPara["grs"] = grs_str;
 		rootPara["tgjc"] = tgjc_str;
-		rootPara["otherExam"] = fzjc_str;
+		rootPara["fzjc"] = fzjc_str;
 
 		std::string stdDiagnoseUrl = tool->GetAssistantDiagnoseUrl();
 		if (stdDiagnoseUrl.empty())
@@ -2567,14 +2567,18 @@ bool BasicForm::OnClicked(ui::EventArgs* msg)
 						ret = MessageBox(GetHWND(), _T("请问Word病例是否已在桌面上？"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_YESNO | MB_ICONQUESTION);
 						if (ret == IDYES)
 						{
+							isWordTextMode = true;
 							SetWordFocusAndGetWordText();
 							if (!clipboardText.empty())
 							{
 								if (clipboardText.find("主诉") != string::npos)
 								{
-									isWordTextMode = true;
 									GetWordContentThreadFun();
 								}
+							}
+							else
+							{
+								shared::Toast::ShowToast(_T("获取病例数据失败！"), 3000, GetHWND());
 							}
 						}
 					}

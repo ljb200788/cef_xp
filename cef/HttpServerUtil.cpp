@@ -240,9 +240,11 @@ bool  CHttpServerUtil::StartServer()
 {
 	mainHwnd = m_MainHwnd;
 
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (!svr.is_valid()) 
 	{
 		printf("server has an error...\n");
+		log.W(__FILE__, __LINE__, YLog::DEBUG, "StartServer", "server has an error");
 		return false;
 	}
 
@@ -392,7 +394,20 @@ bool  CHttpServerUtil::StartServer()
 	bool state = false;
 	if (!PortUsedTCP(port))
 	{
-		state = svr.listen("127.0.0.1", port);
+		state = svr.listen("localhost", port);
+		if (state)
+		{
+			log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("监听服务启动成功!"));
+		}
+		else
+		{
+			log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("监听服务启动失败!"));
+		}
 	}
+	else
+	{
+		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("服务端口已被占用!"));
+	}
+
 	return state;
 }
