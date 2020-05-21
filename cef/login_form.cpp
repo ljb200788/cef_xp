@@ -173,6 +173,14 @@ bool checkString(const char * iName)
 		{
 			result = true;
 		}
+		else if ((*iName) == '.')
+		{
+			result = true;
+		}
+		else if ((*iName) == '@')
+		{
+			result = true;
+		}
 		else
 		{
 			result = false;
@@ -245,10 +253,10 @@ bool   LoginForm::UserLogin()
 	{
 		shared::Toast::ShowToast(L"请输入账号！", 3000, GetHWND());
 	}
-	else if (username.length() < 6)
-	{
-		shared::Toast::ShowToast(L"账号长度不能少于6位！", 3000, GetHWND());
-	}
+	//else if (username.length() < 6)
+	//{
+	//	shared::Toast::ShowToast(L"账号长度不能少于6位！", 3000, GetHWND());
+	//}
 	else if (checkString(username.c_str()) == false)
 	{
 		shared::Toast::ShowToast(L"账号只能包含字母,下划线和数字！", 3000, GetHWND());
