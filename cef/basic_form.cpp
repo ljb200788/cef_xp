@@ -3071,13 +3071,11 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		UpdateHideStateNoticeMenu();
 	}
-	else if (uMsg == WM_CLOSETOASTWINDOW)
+	else if (uMsg == WM_SHOWQUERYWINDOW)
 	{
 		if (toastHwnd > 0)
 		{
-			ShowWindow(toastHwnd, false);
-			CloseWindow(toastHwnd);
-			toastHwnd = 0;
+			shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 3000, NULL);
 		}
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);

@@ -335,7 +335,11 @@ bool  CHttpServerUtil::StartServer()
 						}
 						delete tool;
 
-						shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 3000, NULL);
+						if (mainHwnd > 0)
+						{
+							::SendMessage(mainHwnd, WM_SHOWQUERYWINDOW, NULL, NULL);
+						}
+						
 
 						string cdssToken = "";
 						if (!LoginForm::user_token.empty())
@@ -370,10 +374,7 @@ bool  CHttpServerUtil::StartServer()
 						}
 						res.set_content(result.toStyledString(), "application/json");
 
-						if (mainHwnd > 0)
-						{
-							::SendMessage(mainHwnd, WM_CLOSETOASTWINDOW, NULL, NULL);
-						}
+						
 					}
 					else
 					{
