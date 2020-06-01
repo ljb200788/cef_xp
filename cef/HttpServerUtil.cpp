@@ -335,10 +335,7 @@ bool  CHttpServerUtil::StartServer()
 						}
 						delete tool;
 
-						if (mainHwnd > 0)
-						{
-							::SendMessage(mainHwnd, WM_SHOWTOASTWINDOW, NULL, NULL);
-						}
+						shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 3000, NULL);
 
 						string cdssToken = "";
 						if (!LoginForm::user_token.empty())
