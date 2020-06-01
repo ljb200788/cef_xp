@@ -67,6 +67,8 @@ public:
 
 	std::string   GetAssistantDiagnoseUrl();
 
+	std::string   GetKnowledgeQueryUrl();
+
 	std::string   GetQaResultUrl();
 
 	std::string   GetQaPageUrl();

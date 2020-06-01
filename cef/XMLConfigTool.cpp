@@ -583,6 +583,36 @@ std::string   XMLConfigTool::GetAssistantDiagnoseUrl()
 	return "";
 }
 
+std::string XMLConfigTool::GetKnowledgeQueryUrl()
+{
+	tinyxml2::XMLDocument doc;
+	if (doc.LoadFile("config.xml") != XML_SUCCESS)
+	{
+		MessageBox(NULL, _T("¶ÁÈ¡ÅäÖÃÎÄ¼þconfig.xmlÊ§°Ü£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
+		return "";
+	}
+
+	XMLNode* middleAfterInsertion = doc.FirstChildElement("configPara");
+	if (middleAfterInsertion == NULL)
+	{
+		MessageBox(NULL, _T("ÅäÖÃÎÄ¼þ¸ñÊ½´íÎó£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
+		return "";
+	}
+	XMLElement* element11 = middleAfterInsertion->FirstChildElement();
+
+	while (element11)
+	{
+		std::string eleName = element11->Name();
+		if (strcmp(eleName.c_str(), "knowledgeQueryUrl") == 0)
+		{
+			std::string eleText = element11->GetText();
+			return eleText;
+		}
+		element11 = element11->NextSiblingElement();
+	}
+	return "";
+}
+
 std::string XMLConfigTool::GetQaResultUrl()
 {
 	tinyxml2::XMLDocument doc;

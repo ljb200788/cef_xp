@@ -285,8 +285,119 @@ bool  CHttpServerUtil::StartServer()
 		res.set_content("Slow...\n", "text/plain");
 	});
 
-	svr.Get("/request", [](const Request &req, Response &res) {
-		res.set_content(dump_Request(req), "text/plain");
+	//svr.Get("/request", [](const Request &req, Response &res) {
+	//	res.set_content(dump_Request(req), "text/plain");
+	//});
+
+	svr.Post("/request", [](const Request &req, Response &res) {
+		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+		if (req.body.empty())
+		{
+			Json::Value result;
+
+			result["error_code"] = 1;
+			result["message"] = shared::tools::UtfToString("数据内容为空！");
+			res.set_content(result.toStyledString(), "application/json");
+		}
+		else
+		{
+			Json::Reader reader;
+			Json::Value root;
+
+			// 使用boost库解析json
+			if (reader.parse(req.body, root))
+			{
+				if (root.isNull())
+				{
+					Json::Value result;
+
+					result["error_code"] = 1;
+					result["message"] = shared::tools::UtfToString("数据为空！");
+					res.set_content(result.toStyledString(), "application/json");
+				}
+				else
+				{
+					if (root.isObject())
+					{
+
+						root["client"] = CefForm::strUserName.c_str();
+
+						log.W(__FILE__, __LINE__, YLog::DEBUG, "request", root.toStyledString());
+
+						requestContent = root.toStyledString();
+
+						XMLConfigTool* tool = new XMLConfigTool();
+						std::string urlString = tool->GetKnowledgeQueryUrl();
+						if (urlString.empty())
+						{
+							urlString = "http://medical.c2cloud.cn/kgms/ylkg/v1/diag_cdss/emr";
+						}
+						delete tool;
+
+						if (mainHwnd > 0)
+						{
+							::SendMessage(mainHwnd, WM_SHOWTOASTWINDOW, NULL, NULL);
+						}
+
+						string cdssToken = "";
+						if (!LoginForm::user_token.empty())
+						{
+							cdssToken = "CDSSToken:" + LoginForm::user_token;
+						}
+
+						CWininetHttp netHttp;
+						std::string ret = netHttp.RequestJsonInfo(urlString, Hr_Post, cdssToken + "\r\nContent-Type:application/json;charset=UTF-8\r\n", requestContent);
+						YLog log(YLog::INFO, "log.txt", YLog::ADD);
+						log.W(__FILE__, __LINE__, YLog::INFO, "ret", ret);
+
+						Json::Value result;
+						if (ret.empty())
+						{
+							result["result_code"] = 1;
+							result["message"] = shared::tools::UtfToString("失败！");
+						}
+						else
+						{
+							result["result_code"] = 0;
+							result["message"] = shared::tools::UtfToString("成功！");
+
+							Json::Reader reader_result;
+							Json::Value root_result;
+
+							// 使用boost库解析json
+							if (reader_result.parse(ret, root_result))
+							{
+								result["content"] = root_result;
+							}
+						}
+						res.set_content(result.toStyledString(), "application/json");
+
+						if (mainHwnd > 0)
+						{
+							::SendMessage(mainHwnd, WM_CLOSETOASTWINDOW, NULL, NULL);
+						}
+					}
+					else
+					{
+						Json::Value result;
+
+						result["error_code"] = 2;
+						result["message"] = shared::tools::UtfToString("数据格式错误！");
+						res.set_content(result.toStyledString(), "application/json");
+					}
+
+				}
+			}
+			else
+			{
+				Json::Value result;
+
+				result["error_code"] = 2;
+				result["message"] = shared::tools::UtfToString("数据格式错误！");
+				res.set_content(result.toStyledString(), "application/json");
+			}
+		}
 	});
 
 	svr.Post("/requestDiagnostic", [](const Request &req, Response &res) {

@@ -26,7 +26,7 @@
 #include "tool.h"
 #include "util.h"
 
-const std::string versionNum = "18";
+const std::string versionNum = "19";
 
 #define WM_SHOWTASK						WM_USER+101 
 #define WM_ONCLOSE						WM_USER+102
@@ -58,3 +58,4 @@ const std::string versionNum = "18";
 #define WM_SETRWRECT					WM_USER+128
 #define WM_SHOWREQUESTTOASTWINDOW		WM_USER+129
 #define WM_REFRESHTOKEN					WM_USER+130
+#define WM_CLOSETOASTWINDOW				WM_USER+131
