@@ -357,22 +357,22 @@ bool  CHttpServerUtil::StartServer()
 						{
 							result["result_code"] = 1;
 							result["message"] = shared::tools::UtfToString("失败！");
+							res.set_content(result.toStyledString(), "application/json");
 						}
 						else
 						{
-							result["result_code"] = 0;
-							result["message"] = shared::tools::UtfToString("成功！");
+							//result["result_code"] = 0;
+							//result["message"] = shared::tools::UtfToString("成功！");
 
 							Json::Reader reader_result;
 							Json::Value root_result;
-
-							// 使用boost库解析json
 							if (reader_result.parse(ret, root_result))
 							{
-								result["content"] = root_result;
+								//result["content"] = root_result;
+								res.set_content(root_result.toStyledString(), "application/json");
 							}
 						}
-						res.set_content(result.toStyledString(), "application/json");
+					
 
 						
 					}

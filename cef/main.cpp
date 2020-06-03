@@ -13,6 +13,7 @@
 #include <rapidjson\writer.h>
 #include <rapidjson\stringbuffer.h>
 #include "version_form.h"
+#include "rest_form.h"
 #include "crashdump.h"
 #pragma comment(lib, "dbghelp.lib")
 
@@ -307,6 +308,7 @@ void MainThread::Init()
 
 	SetCurrentDirectory(theme_dir.c_str());
 
+
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (checkExeRun())
 	{
@@ -366,10 +368,10 @@ void MainThread::Init()
 	}
 
 	// 创建一个默认带有阴影的居中窗口
-	/*BasicForm* window = new BasicForm();
-	window->Create(NULL, BasicForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
-	window->CenterWindow();
-	window->ShowWindow();*/
+	//RestForm* window = new RestForm();
+	//window->Create(NULL, RestForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
+	//window->CenterWindow();
+	//window->ShowWindow();
 }
 
 void MainThread::Cleanup()
