@@ -342,6 +342,7 @@ void MainThread::Init()
 	{
 		XMLConfigTool* tool = new XMLConfigTool();
 		bool needLogin = tool->GetNeedLoginConfig();
+		delete tool;
 		if (needLogin)
 		{
 			if (GetLoginInfo() <= 0)

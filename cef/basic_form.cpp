@@ -3073,10 +3073,7 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	else if (uMsg == WM_SHOWQUERYWINDOW)
 	{
-		if (toastHwnd > 0)
-		{
-			shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 3000, NULL);
-		}
+		shared::Toast::ShowToast(_T("正在请求中，请稍候！"), 3000, NULL);
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }

@@ -445,6 +445,15 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			cef_control_->GetBrowserHandler()->GetBrowser()->GetMainFrame()->ExecuteJavaScript(nbase::UTF8ToUTF16(para), L"", 0);
 		}
 	}
+	else if (uMsg == WM_REFRESHCEFWINDOW)
+	{
+		string* url = (string*)wParam;
+		if (cef_control_)
+		{
+			cef_control_->LoadURL(*url);
+			cef_control_->Refresh();
+		}
+	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
 
@@ -837,42 +846,82 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 						else
 						{
 
-							CefForm* window = new CefForm();
-							window->SetNavigateUrl(msg);
-							window->SetMaxFlag(false);
-							window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
-							window->CenterWindow();
-							window->ShowWindow();
 
-							g_windowMap[msg] = window->GetHWND();
+							bool isFindWnd = false;
 
-							int width = 0;
-							int height = 0;
-							if (doc.HasMember("width"))
+							if (msg.find("knowledgeDetails") != string::npos)
 							{
-								Value& m = doc["width"];
-								if (!m.IsNull() && m.IsInt())
+								::SendMessage(CefForm::g_main_hwnd, WM_CLOSEQAWINDOW, 0, 0);
+
+								map<string, HWND>::iterator iter;//定义一个迭代指针iter
+								for (iter = g_windowMap.begin(); iter != g_windowMap.end(); iter++)
 								{
-									width = m.GetInt() + 50;
+									//log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("url"), iter->first);
+									//log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("hwnd"), iter->second);
+
+									if (iter->first.find("knowledgeDetails") != string::npos)
+									{
+										if (iter->second > 0)
+										{
+
+											HWND hWnd = iter->second;
+											log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("窗口句柄"), hWnd);
+
+											::SendMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
+											RECT rect;
+											GetWindowRect(hWnd, &rect);
+											::SetWindowPos(hWnd, HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+
+											::SendMessage(CefForm::g_main_hwnd, WM_OPENEXISTCEFWINDOW, (int)hWnd, 0);
+											isFindWnd = true;
+
+											::SendMessage(hWnd, WM_REFRESHCEFWINDOW, (WPARAM)&msg, NULL);
+										}
+									}
 								}
 							}
 
-							if (doc.HasMember("height"))
-							{
-								Value& m = doc["height"];
-								if (!m.IsNull() && m.IsInt())
-								{
-									height = m.GetInt() + 35;
-								}
-							}
 
-							//根据参数定制化页面的默认大小
-							if (width > 0 && height > 0)
+							if (!isFindWnd)
 							{
-								ui::UiRect rect = window->GetPos();
-								MoveWindow(window->GetHWND(), rect.left, rect.top, width, height, true);
+								CefForm* window = new CefForm();
+								window->SetNavigateUrl(msg);
+								window->SetMaxFlag(false);
+								window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
 								window->CenterWindow();
+								window->ShowWindow();
+
+								g_windowMap[msg] = window->GetHWND();
+
+								int width = 0;
+								int height = 0;
+								if (doc.HasMember("width"))
+								{
+									Value& m = doc["width"];
+									if (!m.IsNull() && m.IsInt())
+									{
+										width = m.GetInt() + 50;
+									}
+								}
+
+								if (doc.HasMember("height"))
+								{
+									Value& m = doc["height"];
+									if (!m.IsNull() && m.IsInt())
+									{
+										height = m.GetInt() + 35;
+									}
+								}
+
+								//根据参数定制化页面的默认大小
+								if (width > 0 && height > 0)
+								{
+									ui::UiRect rect = window->GetPos();
+									MoveWindow(window->GetHWND(), rect.left, rect.top, width, height, true);
+									window->CenterWindow();
+								}
 							}
+							
 						}
 
 					}
