@@ -249,19 +249,22 @@ bool  CHttpServerUtil::StartServer()
 	}
 
 	svr.Get("/", [=](const Request & /*req*/, Response &res) {
+		res.set_header("Access-Control-Allow-Origin", "*");
 		res.set_content(shared::tools::UtfToString("欢迎您使用辅助诊断助手服务！"), "text/plain");
 	});
 
 	svr.Get("/userId", [=](const Request & /*req*/, Response &res) {
 		Json::Value result;
 		result["user_id"] = CefForm::strUserName.c_str();
+		res.set_header("Access-Control-Allow-Origin", "*");
 		res.set_content(result.toStyledString(), "application/json");
 
 	});
 
 	svr.Get("/version", [=](const Request & /*req*/, Response &res) {
-		Json::Value result;
+		res.set_header("Access-Control-Allow-Origin", "*");
 
+		Json::Value result;
 		result["app_version"] = versionNum;
 		result["app_time"] = GetCompileTime();
 
@@ -276,6 +279,7 @@ bool  CHttpServerUtil::StartServer()
 	svr.Get("/token", [=](const Request & /*req*/, Response &res) {
 		Json::Value result;
 		result["user_token"] = LoginForm::user_token.c_str();
+		res.set_header("Access-Control-Allow-Origin", "*");
 		res.set_content(result.toStyledString(), "application/json");
 
 	});
@@ -291,6 +295,8 @@ bool  CHttpServerUtil::StartServer()
 
 	svr.Post("/request", [](const Request &req, Response &res) {
 		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
+		res.set_header("Access-Control-Allow-Origin", "*");
 
 		if (req.body.empty())
 		{
@@ -401,7 +407,7 @@ bool  CHttpServerUtil::StartServer()
 	svr.Post("/requestDiagnostic", [](const Request &req, Response &res) {
 
 		YLog log(YLog::INFO, "log.txt", YLog::ADD);
-
+		res.set_header("Access-Control-Allow-Origin", "*");
 		if (req.body.empty())
 		{
 			Json::Value result;
