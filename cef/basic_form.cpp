@@ -2774,8 +2774,7 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		//显示主窗口
 		::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
-	//如果在图标中单击右键则弹出声明式菜单
-	if (lParam == WM_RBUTTONDOWN)
+	else if (lParam == WM_RBUTTONDOWN)//如果在图标中单击右键则弹出声明式菜单
 	{
 		//获取鼠标坐标
 		POINT pt;
@@ -2793,16 +2792,64 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (cmd == WM_ONSHOW)
 		{
-			ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
-			ModifyMenu(hMenu, 8, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			if (tool->GetDevToolConfig())
+			{
+				if (tool->GetNeedLoginConfig())
+				{
+					ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 8, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+				else
+				{
+					ModifyMenu(hMenu, 6, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 7, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+			}
+			else
+			{
+				if (tool->GetNeedLoginConfig())
+				{
+					ModifyMenu(hMenu, 4, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 5, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+				else
+				{
+					ModifyMenu(hMenu, 3, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 4, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+			}
 
 			ShowWindow(true);
 		}
 		else if (cmd == WM_ONMIN)
 		{
 
-			ModifyMenu(hMenu, 7, MF_UNCHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
-			ModifyMenu(hMenu, 8, MF_CHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			if (tool->GetDevToolConfig())
+			{
+				if (tool->GetNeedLoginConfig())
+				{
+					ModifyMenu(hMenu, 7, MF_UNCHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 8, MF_CHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+				else
+				{
+					ModifyMenu(hMenu, 6, MF_UNCHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+			}
+			else
+			{
+				if (tool->GetNeedLoginConfig())
+				{
+					ModifyMenu(hMenu, 4, MF_UNCHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 5, MF_CHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+				else
+				{
+					ModifyMenu(hMenu, 3, MF_UNCHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+					ModifyMenu(hMenu, 4, MF_CHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+				}
+			}
 
 			ShowWindow(false);
 		}
