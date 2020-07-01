@@ -989,6 +989,41 @@ bool  XMLConfigTool::GetNeedLoginConfig()
 	}
 	return m_bNeedLogin;
 }
+bool XMLConfigTool::GetAutoLoginConfig()
+{
+	bool m_bAutoLogin = true;
+
+	tinyxml2::XMLDocument doc;
+	if (doc.LoadFile("config.xml") != XML_SUCCESS)
+	{
+		//MessageBox(NULL, _T("¶ÁÈ¡ÅäÖÃÎÄ¼þconfig.xmlÊ§°Ü£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_OK);
+		return m_bAutoLogin;
+	}
+
+	XMLNode* middleAfterInsertion = doc.FirstChildElement("configPara");
+	if (middleAfterInsertion == NULL)
+	{
+		//MessageBox(NULL, _T("ÅäÖÃÎÄ¼þ¸ñÊ½´íÎó£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_OK);
+		return m_bAutoLogin;
+	}
+	XMLElement* element11 = middleAfterInsertion->FirstChildElement();
+
+	while (element11)
+	{
+
+		std::string eleName = element11->Name();
+		if (strcmp(eleName.c_str(), "autoLogin") == 0)
+		{
+			std::string eleText = element11->GetText();
+			if (strcmp(eleText.c_str(), "false") == 0)
+			{
+				m_bAutoLogin = false;
+			}
+		}
+		element11 = element11->NextSiblingElement();
+	}
+	return m_bAutoLogin;
+}
 bool  XMLConfigTool::GetDevToolConfig()
 {
 	bool m_bNeedDevTool = false;

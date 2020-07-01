@@ -16,6 +16,11 @@ public:
 	bool   GetNeedLoginConfig();
 
 	/*
+	获取自动登录配置
+	*/
+	bool   GetAutoLoginConfig();
+
+	/*
 		获取自启动配置
 	*/
 	bool   GetAutoStartConfig();

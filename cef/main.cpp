@@ -342,19 +342,20 @@ void MainThread::Init()
 	{
 		XMLConfigTool* tool = new XMLConfigTool();
 		bool needLogin = tool->GetNeedLoginConfig();
+		bool autoLogin = tool->GetAutoLoginConfig();
 		delete tool;
 		if (needLogin)
 		{
-			if (GetLoginInfo() <= 0)
+			if (GetLoginInfo() > 0 && autoLogin)
 			{
-				LoginForm* window = new LoginForm();
-				window->Create(NULL, LoginForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+				BasicForm* window = new BasicForm();
+				window->Create(NULL, BasicForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
 				window->ShowWindow();
 			}
 			else
 			{
-				BasicForm* window = new BasicForm();
-				window->Create(NULL, BasicForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+				LoginForm* window = new LoginForm();
+				window->Create(NULL, LoginForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
 				window->ShowWindow();
 			}
 
