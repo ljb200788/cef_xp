@@ -14,13 +14,13 @@
 #include <rapidjson\stringbuffer.h>
 #include "version_form.h"
 #include "rest_form.h"
-#include "crashdump.h"
+//#include "crashdump.h"
 #pragma comment(lib, "dbghelp.lib")
 
 using namespace rapidjson;
 using namespace std;
 
-CrashDump dump;
+//CrashDump dump;
 void* m_pBaseMapFile = NULL;
 
 extern "C" LSTATUS MyRegGetValueA(HKEY hkey, LPCSTR lpSubKey, LPCSTR lpValue, DWORD dwFlags, LPDWORD pdwType, PVOID pvData, LPDWORD pcbData)

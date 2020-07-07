@@ -341,7 +341,16 @@ bool  CHttpServerUtil::StartServer()
 						}
 						delete tool;
 
-						if (mainHwnd > 0)
+						bool wait = false;
+						if (root.isMember("wait"))
+						{
+							if (root["wait"].isBool())
+							{
+								wait = root["wait"].asBool();
+							}
+						}
+
+						if (mainHwnd > 0 && wait)
 						{
 							::SendMessage(mainHwnd, WM_SHOWQUERYWINDOW, NULL, NULL);
 						}
