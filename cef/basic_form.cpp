@@ -2740,6 +2740,11 @@ void CheckRWKnowledgeSetWindowRect()
 LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 
+	if (uMsg == SPI_SETICONTITLEWRAP)
+	{
+		Shell_NotifyIcon(NIM_ADD, &m_trayIcon);
+	}
+
 	if (uMsg == WM_HOTKEY)
 	{
 		if (hotkeyId9 == wParam)
@@ -2768,8 +2773,33 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		ShowWindow(true);
 		::SetFocus(m_hWnd);
 		SetForegroundWindow(m_hWnd);
-		ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
-		ModifyMenu(hMenu, 8, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+
+		if (tool->GetDevToolConfig())
+		{
+			if (tool->GetNeedLoginConfig())
+			{
+				ModifyMenu(hMenu, 7, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+				ModifyMenu(hMenu, 8, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			}
+			else
+			{
+				ModifyMenu(hMenu, 6, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+				ModifyMenu(hMenu, 7, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			}
+		}
+		else
+		{
+			if (tool->GetNeedLoginConfig())
+			{
+				ModifyMenu(hMenu, 4, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+				ModifyMenu(hMenu, 5, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			}
+			else
+			{
+				ModifyMenu(hMenu, 3, MF_CHECKED | MF_BYPOSITION, WM_ONSHOW, _T("显示主窗口"));
+				ModifyMenu(hMenu, 4, MF_UNCHECKED | MF_BYPOSITION, WM_ONMIN, _T("隐藏主窗口"));
+			}
+		}
 
 		//显示主窗口
 		::SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
