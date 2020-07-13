@@ -2093,6 +2093,8 @@ void WriteStartRegFile()
 
 }
 
+UINT WM_TASKBARCREATED = 0;
+
 void BasicForm::InitWindow()
 {
 	// 监听鼠标单击事件
@@ -2193,6 +2195,8 @@ void BasicForm::InitWindow()
 	{
 		shared::Toast::ShowToast(_T("网络未连接！"), 3000, NULL);
 	}
+
+	WM_TASKBARCREATED = ::RegisterWindowMessage(_T("TaskbarCreated"));
 
 }
 
@@ -2743,6 +2747,12 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	if (uMsg == SPI_SETICONTITLEWRAP)
 	{
 		Shell_NotifyIcon(NIM_ADD, &m_trayIcon);
+	}
+	else if (uMsg == WM_TASKBARCREATED)
+	{
+		AddTrayIcon();
+		CreateTrayMenu();
+		ShowWindow(SW_SHOW);
 	}
 
 	if (uMsg == WM_HOTKEY)

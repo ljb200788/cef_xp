@@ -250,7 +250,8 @@ bool  CHttpServerUtil::StartServer()
 
 	svr.Get("/", [=](const Request & /*req*/, Response &res) {
 		res.set_header("Access-Control-Allow-Origin", "*");
-		res.set_content(shared::tools::UtfToString("欢迎您使用辅助诊断助手服务！"), "text/plain");
+		//res.set_content(shared::tools::UtfToString("欢迎您使用辅助诊断助手服务！"), "text/plain");
+		res.set_content("欢迎您使用辅助诊断助手服务！", "text/plain");
 	});
 
 	svr.Get("/userId", [=](const Request & /*req*/, Response &res) {
