@@ -36,6 +36,8 @@ CefForm* CefForm::g_ptr_rw_cef = NULL;
 //标记页面是否加载完成
 bool    isLoadEnd = false;
 
+CefForm*	g_msg_window = NULL;
+
 const wstring CefForm::kClassName = L"Cef";
 
 // 获取屏幕大小
@@ -1037,6 +1039,95 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 				}
 			}
 		}
+	}));
+
+	cef_control_->RegisterCppFunc(L"ShowGlobalMessageBox", ToWeakCallback([this](const std::string& params, nim_cef::ReportResultFunction callback) {
+		//shared::Toast::ShowToast(nbase::UTF8ToUTF16(params), 3000, GetHWND());
+		callback(false, R"({ "message": "Success." })");
+
+		if (params.empty())
+		{
+			return;
+		}
+
+		YLog log(YLog::INFO, "log.txt", YLog::ADD);
+		log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("接收到的参数"), params);
+
+		rapidjson::Document doc;
+		doc.Parse(params.c_str());
+
+		if (!doc.IsNull())
+		{
+			if (doc.HasMember("url"))
+			{
+				Value& m = doc["url"];
+				if (!m.IsNull() && m.IsString())
+				{
+					std::string msg = m.GetString();
+					//shared::Toast::ShowToast(nbase::UTF8ToUTF16(msg), 3000, GetHWND());
+
+					log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("通知中心打开服务页面"), msg);
+
+					if (g_msg_window == NULL)
+					{
+						g_msg_window = new CefForm();
+						g_msg_window->SetHiddenFlag(true);
+						g_msg_window->Create(NULL, CefForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0, nim_cef::CefManager::GetInstance()->IsEnableOffsetRender());
+					}
+
+					g_msg_window->SetNavigateUrl(msg);
+					g_msg_window->SetMaxFlag(false);
+					g_msg_window->RefreshNavigateUrl();
+					g_msg_window->ShowWindow();
+					g_msg_window->SetMinBtnHidden(false);
+					g_msg_window->SetMaxBtnHidden(false);
+					g_msg_window->ToTopMost(true);
+
+					int width = 0;
+					int height = 0;
+					if (doc.HasMember("width"))
+					{
+						Value& m = doc["width"];
+						if (!m.IsNull() && m.IsInt())
+						{
+							width = m.GetInt();
+						}
+					}
+
+					if (doc.HasMember("height"))
+					{
+						Value& m = doc["height"];
+						if (!m.IsNull() && m.IsInt())
+						{
+							height = m.GetInt() + 35;
+						}
+					}
+
+					//根据参数定制化页面的默认大小
+					if (width > 0 && height > 0)
+					{
+						//ui::UiRect rect = g_msg_indow->GetPos();
+						if (height >= (m_iScreenHeight_cef - 50))
+						{
+							height = m_iScreenHeight_cef - 50;
+						}
+
+						MoveWindow(g_msg_window->GetHWND(), m_iScreenWidth_cef - width - 10, m_iScreenHeight_cef - height - 50, width, height, true);
+						g_msg_window->ShowWindow();
+					}
+				}
+			}
+
+			if (doc.HasMember("message"))
+			{
+				Value& m = doc["message"];
+				if (!m.IsNull() && m.IsString())
+				{
+					std::string msg = m.GetString();
+				}
+			}
+		}
+
 	}));
 
 	cef_control_->RegisterCppFunc(L"SetUserName", ToWeakCallback([this](const std::string& params, nim_cef::ReportResultFunction callback) {
