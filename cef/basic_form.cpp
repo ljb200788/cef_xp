@@ -166,7 +166,7 @@ BOOL IsNetConnected()
 	return bOnline;
 }
 
-void RunHttpServer()
+void RunHttpServer(void*& data)
 {
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (serverUtil->StartServer())
@@ -175,7 +175,23 @@ void RunHttpServer()
 	}
 	else
 	{
-		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("Http中转服务启动失败!"));
+		log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启动Http服务"), shared::tools::UtfToString("启动失败,端口已被占用!"));
+		BasicForm* ptrForm = (BasicForm*)data;
+		if (ptrForm != NULL)
+		{
+			XMLConfigTool* tool = new XMLConfigTool();
+			unsigned int port = tool->GetLocalServerPort();
+			delete tool;
+
+			wchar_t szBuffer[100] = { 0 };
+			wsprintf(szBuffer, _T("%d%s"), port, _T("端口已占用，请修改服务端口！"));
+
+			int ret = MessageBox(ptrForm->GetHWND(), szBuffer, _T("辅助诊断助手"), MB_OK);
+			if (ret == IDOK)
+			{
+				::SendMessage(ptrForm->GetHWND(), WM_CLOSE, 0, 0);
+			}
+		}
 	}
 
 	if (serverUtil)
@@ -2149,7 +2165,7 @@ void BasicForm::InitWindow()
 
 	serverUtil->m_MainHwnd = GetHWND();
 
-	boost::thread serverThread(&RunHttpServer);
+	boost::thread serverThread(boost::bind(&RunHttpServer, (void*)this));
 	serverThread.detach();
 
 	boost::thread receive_thread(boost::bind(&ReceiveMessage, (void*)this));
