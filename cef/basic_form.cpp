@@ -2753,6 +2753,11 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		AddTrayIcon();
 		CreateTrayMenu();
 		ShowWindow(SW_SHOW);
+		if (isUserOnline)
+		{
+			m_trayIcon.hIcon = ::LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(131));
+			Shell_NotifyIcon(NIM_MODIFY, &m_trayIcon);
+		}
 	}
 
 	if (uMsg == WM_HOTKEY)
