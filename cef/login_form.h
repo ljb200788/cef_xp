@@ -6,6 +6,11 @@ using namespace std;
 */
 int GetLoginInfo();
 
+/*
+	ÓÃ»§×¢²á
+*/
+int AutoRegisterInfo();
+
 class LoginForm : public ui::WindowImplBase
 {
 public:

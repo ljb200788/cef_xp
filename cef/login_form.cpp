@@ -11,7 +11,9 @@
 #include "ylog.h"
 #include "INI.h"
 #include "md5.h"
+#include "iphlpapi.h"
 
+#pragma comment(lib, "iphlpapi.lib") 
 
 using namespace ui;
 using namespace boost;
@@ -20,6 +22,66 @@ string LoginForm::user_name = "";
 string LoginForm::user_token = "";
 string LoginForm::user_id = "";
 
+
+string getMacInfo()
+{
+	// PIP_ADAPTER_INFO struct contains network information
+	PIP_ADAPTER_INFO pIpAdapterInfo = new IP_ADAPTER_INFO();
+	unsigned long adapter_size = sizeof(IP_ADAPTER_INFO);
+	int ret = GetAdaptersInfo(pIpAdapterInfo, &adapter_size);
+
+	if (ret == ERROR_BUFFER_OVERFLOW)
+	{
+		// overflow, use the output size to recreate the handler
+		delete pIpAdapterInfo;
+		pIpAdapterInfo = (PIP_ADAPTER_INFO)new BYTE[adapter_size];
+		ret = GetAdaptersInfo(pIpAdapterInfo, &adapter_size);
+	}
+
+	if (ret == ERROR_SUCCESS)
+	{
+		int card_index = 0;
+
+		// may have many cards, it saved in linklist
+		while (pIpAdapterInfo)
+		{
+			std::cout << "---- " << "NetworkCard " << ++card_index << " ----" << std::endl;
+
+			std::cout << "Network Card Name: " << pIpAdapterInfo->AdapterName << std::endl;
+			std::cout << "Network Card Description: " << pIpAdapterInfo->Description << std::endl;
+
+			// get IP, one card may have many IPs
+			PIP_ADDR_STRING pIpAddr = &(pIpAdapterInfo->IpAddressList);
+			while (pIpAddr)
+			{
+				char local_ip[128] = { 0 };
+				strcpy_s(local_ip, 128, pIpAddr->IpAddress.String);
+				std::cout << "Local IP: " << local_ip << std::endl;
+
+				pIpAddr = pIpAddr->Next;
+			}
+
+			char local_mac[128] = { 0 };
+			int char_index = 0;
+			for (int i = 0; i < pIpAdapterInfo->AddressLength; i++)
+			{
+				char temp_str[10] = { 0 };
+				sprintf_s(temp_str, "%02X-", pIpAdapterInfo->Address[i]); // X for uppercase, x for lowercase
+				strcpy_s(local_mac + char_index, 10, temp_str);
+				char_index += 3;
+			}
+			local_mac[17] = '\0'; // remove tail '-'
+
+			string macAddress = local_mac;
+			return macAddress;
+		}
+	}
+
+	if (pIpAdapterInfo)
+		delete pIpAdapterInfo;
+
+	return "";
+}
 int GetLoginInfo()
 {
 	INI::PARSE_FLAGS = INI::PARSE_COMMENTS_SLASH | INI::PARSE_COMMENTS_HASH;
@@ -122,6 +184,106 @@ int GetLoginInfo()
 				}
 			}
 		}
+	}
+
+	return 0;
+}
+
+int AutoRegisterInfo()
+{
+	INI::PARSE_FLAGS = INI::PARSE_COMMENTS_SLASH | INI::PARSE_COMMENTS_HASH;
+
+	INI ini("login.ini", true);
+
+	ini.select("UserInfo");
+
+	string token = ini.get("UserInfo", "token", "");
+	LoginForm::user_token = token;
+	LoginForm::user_name = ini.get("UserInfo", "userName", "");
+	LoginForm::user_id = ini.get("UserInfo", "userId", "");
+
+	YLog log(YLog::INFO, "log.txt", YLog::ADD);
+	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "token", token);
+
+	if (token.empty())
+	{
+		XMLConfigTool* tool = new XMLConfigTool();
+		std::string registerConfigUrl = tool->GetRegisterConfigUrl();
+		delete tool;
+
+		if (!registerConfigUrl.empty())
+		{
+			Json::Value resultPara;
+			resultPara["userName"] = getMacInfo();
+			resultPara["userRealname"] = getMacInfo();
+
+			std::string pwd_md5 = md5("creator@123");
+			resultPara["userPassword"] = pwd_md5;
+
+			string data = getMacInfo() + "creator";
+			string registerMark  = "registerMark:" + md5(data);
+
+			CWininetHttp netHttp;
+			std::string ret = netHttp.RequestJsonInfo(registerConfigUrl, Hr_Post, registerMark + "\r\nContent-Type:application/json;charset=utf-8", resultPara.toStyledString());
+
+			log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "registerConfigUrl", ret);
+
+
+			string userId = "";
+			string user_name = "";
+
+			Json::Reader reader;
+			Json::Value value;
+			if (reader.parse(ret, value))
+			{
+				if (value.isMember("token"))
+				{
+					if (value["token"].isString())
+					{
+						token = value["token"].asString();
+					}
+
+					if (value.isMember("userName"))
+					{
+						if (value["userName"].isString())
+						{
+							user_name = value["userName"].asString();
+						}
+
+					}
+
+					if (value.isMember("userId"))
+					{
+						if (value["userId"].isString())
+						{
+							userId = value["userId"].asString();
+						}
+					}
+
+					INI::SAVE_FLAGS = INI::SAVE_PRUNE | INI::SAVE_PADDING_SECTIONS | INI::SAVE_SPACE_SECTIONS | INI::SAVE_SPACE_KEYS | INI::SAVE_TAB_KEYS | INI::SAVE_SEMICOLON_KEYS;
+
+					LoginForm::user_token = token;
+					LoginForm::user_name = user_name;
+					LoginForm::user_id = userId;
+
+					INI ini("login.ini", false);
+
+					ini.create("UserInfo");
+					ini.set("token", token);
+					ini.set("userName", user_name);
+					ini.set("userId", userId);
+
+					ini.save("login.ini");
+
+					return 1;
+				}
+
+			}
+		}
+	}
+	else
+	{
+		return 1;
 	}
 
 	return 0;

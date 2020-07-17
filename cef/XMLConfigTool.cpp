@@ -763,6 +763,36 @@ std::string    XMLConfigTool::GetLoginConfigUrl()
 	return "";
 }
 
+std::string XMLConfigTool::GetRegisterConfigUrl()
+{
+	tinyxml2::XMLDocument doc;
+	if (doc.LoadFile("config.xml") != XML_SUCCESS)
+	{
+		MessageBox(NULL, _T("¶ÁÈ¡ÅäÖÃÎÄ¼þconfig.xmlÊ§°Ü£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
+		return "";
+	}
+
+	XMLNode* middleAfterInsertion = doc.FirstChildElement("configPara");
+	if (middleAfterInsertion == NULL)
+	{
+		MessageBox(NULL, _T("ÅäÖÃÎÄ¼þ¸ñÊ½´íÎó£¡"), _T("¸¨ÖúÕï¶ÏÖúÊÖ"), MB_SYSTEMMODAL | MB_ICONEXCLAMATION | MB_OK);
+		return "";
+	}
+	XMLElement* element11 = middleAfterInsertion->FirstChildElement();
+
+	while (element11)
+	{
+		std::string eleName = element11->Name();
+		if (strcmp(eleName.c_str(), "registerConfigUrl") == 0)
+		{
+			std::string eleText = element11->GetText();
+			return eleText;
+		}
+		element11 = element11->NextSiblingElement();
+	}
+	return "";
+}
+
 std::string    XMLConfigTool::GetToolConfigUrl()
 {
 	tinyxml2::XMLDocument doc;
@@ -918,6 +948,40 @@ bool  XMLConfigTool::GetRwStartConfig()
 		element11 = element11->NextSiblingElement();
 	}
 	return rwStartState;
+}
+
+bool XMLConfigTool::GetAutoRegisterConfig()
+{
+	bool autoRegisterState = false;
+
+	tinyxml2::XMLDocument doc;
+	if (doc.LoadFile("config.xml") != XML_SUCCESS)
+	{
+		return autoRegisterState;
+	}
+
+	XMLNode* middleAfterInsertion = doc.FirstChildElement("configPara");
+	if (middleAfterInsertion == NULL)
+	{
+		return autoRegisterState;
+	}
+	XMLElement* element11 = middleAfterInsertion->FirstChildElement();
+
+	while (element11)
+	{
+
+		std::string eleName = element11->Name();
+		if (strcmp(eleName.c_str(), "autoRegister") == 0)
+		{
+			std::string eleText = element11->GetText();
+			if (strcmp(eleText.c_str(), "true") == 0)
+			{
+				autoRegisterState = true;
+			}
+		}
+		element11 = element11->NextSiblingElement();
+	}
+	return autoRegisterState;
 }
 
 bool  XMLConfigTool::GetAutoStartConfig()

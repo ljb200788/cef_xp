@@ -26,7 +26,7 @@
 #include "tool.h"
 #include "util.h"
 
-const std::string versionNum = "20";
+const std::string versionNum = "21";
 
 #define WM_SHOWTASK						WM_USER+101 
 #define WM_ONCLOSE						WM_USER+102

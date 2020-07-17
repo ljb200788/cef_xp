@@ -343,9 +343,16 @@ void MainThread::Init()
 		XMLConfigTool* tool = new XMLConfigTool();
 		bool needLogin = tool->GetNeedLoginConfig();
 		bool autoLogin = tool->GetAutoLoginConfig();
+		bool autoRegister = tool->GetAutoRegisterConfig();
 		delete tool;
 		if (needLogin)
 		{
+			if (autoRegister)
+			{
+				log.W(__FILE__, __LINE__, YLog::INFO, shared::tools::UtfToString("启用自动注册机制"), getCurrentTimeStr());
+				AutoRegisterInfo();
+			}
+
 			if (GetLoginInfo() > 0 && autoLogin)
 			{
 				BasicForm* window = new BasicForm();

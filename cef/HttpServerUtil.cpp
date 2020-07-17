@@ -271,7 +271,7 @@ bool  CHttpServerUtil::StartServer()
 
 		string version = GetLocalPogramVersion();
 		result["file_version"] = version;
-		result["app_name"] = shared::tools::UtfToString("¸¨ÖúÕï¶ÏÖúÊÖ£¨ÄÚ²¿°æ£©");
+		result["app_name"] = shared::tools::UtfToString("¸¨ÖúÕï¶ÏÖúÊÖ£¨ÏæÑÅ¸½Ò»£©");
 
 		res.set_content(result.toStyledString(), "application/json");
 

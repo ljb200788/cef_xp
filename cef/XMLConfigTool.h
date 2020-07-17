@@ -20,6 +20,12 @@ public:
 	*/
 	bool   GetAutoLoginConfig();
 
+
+	/*
+	获取自动注册配置
+	*/
+	bool   GetAutoRegisterConfig();
+
 	/*
 		获取自启动配置
 	*/
@@ -69,6 +75,8 @@ public:
 	std::string   GetToolConfigUrl();
 
 	std::string   GetLoginConfigUrl();
+
+	std::string   GetRegisterConfigUrl();
 
 	std::string   GetAssistantDiagnoseUrl();
 
