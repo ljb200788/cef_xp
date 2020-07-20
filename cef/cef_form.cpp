@@ -453,7 +453,8 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if (cef_control_)
 		{
 			cef_control_->LoadURL(*url);
-			cef_control_->Refresh();
+			SetNavigateUrl(*url);
+			//cef_control_->Refresh();
 		}
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
@@ -851,7 +852,7 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 
 							bool isFindWnd = false;
 
-							if (msg.find("knowledgeDetails") != string::npos)
+							if (msg.find("reload") != string::npos)
 							{
 								::SendMessage(CefForm::g_main_hwnd, WM_CLOSEQAWINDOW, 0, 0);
 
@@ -861,18 +862,18 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 									//log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("url"), iter->first);
 									//log.W(filename(__FILE__), __LINE__, YLog::INFO, shared::tools::UtfToString("hwnd"), iter->second);
 
-									if (iter->first.find("knowledgeDetails") != string::npos)
+									string remark = "reload";
+									if (msg.length() > 8)
+									{
+										remark = msg.substr(msg.length() - 8, msg.length());
+									}
+									if (iter->first.find(remark) != string::npos)
 									{
 										if (iter->second > 0)
 										{
 
 											HWND hWnd = iter->second;
 											log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("´°¿Ú¾ä±ú"), hWnd);
-
-											::SendMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
-											RECT rect;
-											GetWindowRect(hWnd, &rect);
-											::SetWindowPos(hWnd, HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW | SWP_FRAMECHANGED | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
 
 											::SendMessage(CefForm::g_main_hwnd, WM_OPENEXISTCEFWINDOW, (int)hWnd, 0);
 											isFindWnd = true;
