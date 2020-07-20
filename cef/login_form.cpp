@@ -193,14 +193,14 @@ int AutoRegisterInfo()
 {
 	INI::PARSE_FLAGS = INI::PARSE_COMMENTS_SLASH | INI::PARSE_COMMENTS_HASH;
 
-	INI ini("login.ini", true);
+	INI ini_read("login.ini", true);
 
-	ini.select("UserInfo");
+	ini_read.select("UserInfo");
 
-	string token = ini.get("UserInfo", "token", "");
+	string token = ini_read.get("UserInfo", "token", "");
 	LoginForm::user_token = token;
-	LoginForm::user_name = ini.get("UserInfo", "userName", "");
-	LoginForm::user_id = ini.get("UserInfo", "userId", "");
+	LoginForm::user_name = ini_read.get("UserInfo", "userName", "");
+	LoginForm::user_id = ini_read.get("UserInfo", "userId", "");
 
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	log.W(filename(__FILE__), __LINE__, YLog::DEBUG, "token", token);
@@ -266,14 +266,14 @@ int AutoRegisterInfo()
 					LoginForm::user_name = user_name;
 					LoginForm::user_id = userId;
 
-					INI ini("login.ini", false);
+					INI ini_write("login.ini", false);
 
-					ini.create("UserInfo");
-					ini.set("token", token);
-					ini.set("userName", user_name);
-					ini.set("userId", userId);
+					ini_write.create("UserInfo");
+					ini_write.set("token", token);
+					ini_write.set("userName", user_name);
+					ini_write.set("userId", userId);
 
-					ini.save("login.ini");
+					ini_write.save("login.ini");
 
 					return 1;
 				}
