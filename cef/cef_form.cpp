@@ -455,6 +455,7 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			cef_control_->LoadURL(*url);
 			SetNavigateUrl(*url);
 			//cef_control_->Refresh();
+			g_windowMap[*url] = GetHWND();
 		}
 	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
@@ -470,7 +471,18 @@ LRESULT CefForm::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled
 
 	if (g_windowMap.count(m_strUrl) > 0)
 	{
-		g_windowMap[m_strUrl] = 0;
+		HWND hwnd = g_windowMap[m_strUrl] ;
+
+		map<string, HWND>::iterator iter;//定义一个迭代指针iter
+		for (iter = g_windowMap.begin(); iter != g_windowMap.end(); iter++)
+		{
+			string url = iter->first;
+			if (iter->second == hwnd)
+			{
+				iter->second = 0;
+				g_windowMap[url] = 0;
+			}
+		}
 	}
 
 	if (m_strUrl.find("rwBrowser") != string::npos)
@@ -849,7 +861,6 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 						else
 						{
 
-
 							bool isFindWnd = false;
 
 							if (msg.find("reload") != string::npos)
@@ -873,6 +884,7 @@ void CefForm::OnLoadEnd(int httpStatusCode)
 										{
 
 											HWND hWnd = iter->second;
+											
 											log.W(filename(__FILE__), __LINE__, YLog::DEBUG, shared::tools::UtfToString("窗口句柄"), hWnd);
 
 											::SendMessage(CefForm::g_main_hwnd, WM_OPENEXISTCEFWINDOW, (int)hWnd, 0);
