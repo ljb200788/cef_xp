@@ -14,6 +14,7 @@
 #include <tlhelp32.h>
 #include "resource.h"
 #include "login_form.h"
+#include "rest_form.h"
 
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "wininet.lib")
@@ -2936,6 +2937,10 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if (cmd == WM_WSRECONNECT)
 		{
+			GetLoginInfo();
+			boost::this_thread::sleep(boost::posix_time::seconds(2));
+			::SendMessage(m_hiddenWindow->GetHWND(), WM_REFRESHTOKEN, 0, 0);
+
 			if (m_hiddenWindow)
 			{
 				m_hiddenWindow->RefreshNavigateUrl();
@@ -2961,11 +2966,13 @@ LRESULT BasicForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			int ret = MessageBox(GetHWND(), _T("确定清除浏览器缓存？"), _T("辅助诊断助手"), MB_SYSTEMMODAL | MB_YESNO | MB_ICONQUESTION);
 			if (ret == IDYES)
 			{
+			
+				DeleteFileA("login.ini");
+				ExitApp();
+
 				std::string exePath = nbase::UTF16ToUTF8(QPath::GetAppPath());
 				std::string clearCachePath = exePath + "ClearCacheTool.exe";
 				ShellExecute(NULL, _T("open"), nbase::UTF8ToUTF16(clearCachePath.c_str()).c_str(), NULL, NULL, SW_SHOWNORMAL);
-
-				ExitApp();
 			}
 		}
 	}
@@ -3499,4 +3506,30 @@ void  BasicForm::RequestToolConfigUrl()
 		if (!tool->GetNavigateUrlEx("navigateUrl6").empty())
 			m_navUrl6 = tool->GetNavigateUrlEx("navigateUrl6");
 	}
+}
+
+/*
+弹出调试窗口程序
+*/
+void  ShowRestFormWindow()
+{
+	RestForm* window = new RestForm();
+	window->Create(NULL, RestForm::kClassName.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+	window->CenterWindow();
+	window->ShowWindow();
+}
+
+LRESULT BasicForm::OnKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	if (wParam == VK_F9)
+	{
+		bHandled = TRUE;
+		ShowRestFormWindow();
+	}
+	else if (wParam == VK_F3)
+	{
+		::SendMessage(m_hiddenWindow->GetHWND(), WM_SHOWALLCEFURL, 0, 0);
+	}
+
+	return __super::OnKeyDown(uMsg, wParam, lParam, bHandled);
 }

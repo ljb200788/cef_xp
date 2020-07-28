@@ -45,7 +45,7 @@ void RestForm::InitWindow()
 	user_name_edit_->SetSelAllOnFocus(true);
 	password_edit_->SetSelAllOnFocus(true);
 
-	user_name_edit_->SetText(L"http://localhost:8080/request");
+	user_name_edit_->SetText(L"http://localhost:9526/request");
 
 	std::wstring para(L"{\"type\":\"ui\",\"data\":{\"item_id\":\"test123456\",\"item_type\":\"DISEASE\"},\"api\":\"knowledges\"}");
 	password_edit_->SetText(para);
@@ -66,7 +66,7 @@ bool RestForm::Notify(ui::EventArgs* msg)
 
 LRESULT RestForm::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	::PostQuitMessage(0);
+	//::PostQuitMessage(0);
 	return __super::OnClose(uMsg, wParam, lParam, bHandled);
 }
 

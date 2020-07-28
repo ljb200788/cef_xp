@@ -458,6 +458,18 @@ LRESULT CefForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			g_windowMap[*url] = GetHWND();
 		}
 	}
+	else if (uMsg == WM_SHOWALLCEFURL)
+	{
+		map<string, HWND>::iterator iter;//定义一个迭代指针iter
+		for (iter = g_windowMap.begin(); iter != g_windowMap.end(); iter++)
+		{
+			string url = iter->first;
+			HWND hwnd = iter->second;
+
+			log.W(__FILE__, __LINE__, YLog::DEBUG, shared::tools::UtfToString("页面地址"), url);
+			log.W(__FILE__, __LINE__, YLog::DEBUG, shared::tools::UtfToString("页面句柄"), hwnd);
+		}
+	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
 

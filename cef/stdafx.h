@@ -60,3 +60,4 @@ const std::string versionNum = "23";
 #define WM_REFRESHTOKEN					WM_USER+130
 #define WM_SHOWQUERYWINDOW				WM_USER+131
 #define WM_REFRESHCEFWINDOW				WM_USER+132
+#define WM_SHOWALLCEFURL				WM_USER+133
