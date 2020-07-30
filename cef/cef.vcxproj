@@ -153,6 +153,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DelayLoadDLLs>nim_libcef.dll</DelayLoadDLLs>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -183,6 +184,7 @@
     <ClInclude Include="INI.h" />
     <ClInclude Include="InternalMedicineTool.h" />
     <ClInclude Include="login_form.h" />
+    <ClInclude Include="LUrlParser.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="basic_form.h" />
     <ClInclude Include="md5.h" />
@@ -208,6 +210,7 @@
     <ClCompile Include="HttpServerUtil.cpp" />
     <ClCompile Include="InternalMedicineTool.cpp" />
     <ClCompile Include="login_form.cpp" />
+    <ClCompile Include="LUrlParser.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="md5.cpp" />
     <ClCompile Include="rest_form.cpp" />

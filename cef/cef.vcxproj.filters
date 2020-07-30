@@ -87,6 +87,9 @@
     <ClInclude Include="rest_form.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="LUrlParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -141,6 +144,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="rest_form.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LUrlParser.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

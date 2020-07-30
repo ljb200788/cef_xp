@@ -105,6 +105,32 @@ string  otherExamHis = "";
 int m_iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
 int m_iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
+bool PingIPPort(string Ipaddr, int Port)
+{
+	int mysocket;
+	struct sockaddr_in my_addr;
+	WSADATA wsaData;
+	WORD wVersionRequested = MAKEWORD(1, 1);
+	if (WSAStartup(wVersionRequested, &wsaData))
+	{
+		return false;
+	}
+	if ((mysocket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+	{
+		return false;
+	}
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(Port);
+	my_addr.sin_addr.s_addr = inet_addr(Ipaddr.c_str());
+	if (connect(mysocket, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == SOCKET_ERROR)
+	{
+		closesocket(mysocket);
+		return false;
+	}
+	closesocket(mysocket);
+	WSACleanup();
+	return true;
+}
 BOOL IsBaiduConnected()
 {
 	CWininetHttp netHttp;

@@ -335,6 +335,10 @@ bool checkString(const char * iName)
 		{
 			result = true;
 		}
+		else if ((*iName) == '-')
+		{
+			result = true;
+		}
 		else if ((*iName) == '.')
 		{
 			result = true;

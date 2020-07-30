@@ -15,10 +15,12 @@
 #include "version_form.h"
 #include "rest_form.h"
 //#include "crashdump.h"
+#include "LUrlParser.h"
 #pragma comment(lib, "dbghelp.lib")
 
 using namespace rapidjson;
 using namespace std;
+using namespace LUrlParser;
 
 //CrashDump dump;
 void* m_pBaseMapFile = NULL;
@@ -267,6 +269,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	HRESULT hr = ::OleInitialize(NULL);
 	if (FAILED(hr))
 		return 0;
+
+	{
+		XMLConfigTool* tool = new XMLConfigTool();
+		string loginUrl = tool->GetLoginConfigUrl();
+		delete tool;
+
+		clParseURL URL = clParseURL::ParseURL(loginUrl);
+		if (URL.IsValid())
+		{
+			YLog log(YLog::INFO, "log.txt", YLog::ADD);
+			if (PingIPPort(URL.m_Host, atoi(URL.m_Port.c_str())) == false)
+			{
+				wchar_t szBuffer[100] = { 0 };
+				wsprintf(szBuffer, _T("%s"), _T("后台服务不可用，请联系管理员！"));
+
+				int ret = MessageBox(NULL, szBuffer, _T("辅助诊断助手"), MB_OK);
+				return 0;
+			}
+		}
+	}
 
 	// 初始化 CEF
 	CefSettings settings;
