@@ -271,6 +271,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return 0;
 
 	{
+		std::wstring theme_dir = QPath::GetAppPath();
+		SetCurrentDirectory(theme_dir.c_str());
+
 		XMLConfigTool* tool = new XMLConfigTool();
 		string loginUrl = tool->GetLoginConfigUrl();
 		delete tool;
@@ -327,9 +330,7 @@ void MainThread::Init()
 {
 
 	std::wstring theme_dir = QPath::GetAppPath();
-
 	SetCurrentDirectory(theme_dir.c_str());
-
 
 	YLog log(YLog::INFO, "log.txt", YLog::ADD);
 	if (checkExeRun())
