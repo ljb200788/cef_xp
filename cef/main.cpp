@@ -16,6 +16,7 @@
 #include "rest_form.h"
 //#include "crashdump.h"
 #include "LUrlParser.h"
+#include <boost/thread.hpp>
 #pragma comment(lib, "dbghelp.lib")
 
 using namespace rapidjson;
@@ -270,7 +271,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	if (FAILED(hr))
 		return 0;
 
-	{
+	/*{
 		std::wstring theme_dir = QPath::GetAppPath();
 		SetCurrentDirectory(theme_dir.c_str());
 
@@ -282,16 +283,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (URL.IsValid())
 		{
 			YLog log(YLog::INFO, "log.txt", YLog::ADD);
+
 			if (PingIPPort(URL.m_Host, atoi(URL.m_Port.c_str())) == false)
 			{
-				wchar_t szBuffer[100] = { 0 };
-				wsprintf(szBuffer, _T("%s"), _T("后台服务不可用，请联系管理员！"));
+				boost::this_thread::sleep(boost::posix_time::seconds(15));
+				if (PingIPPort(URL.m_Host, atoi(URL.m_Port.c_str())) == false)
+				{
+					wchar_t szBuffer[100] = { 0 };
+					wsprintf(szBuffer, _T("%s"), _T("后台服务不可用，请联系管理员！"));
 
-				int ret = MessageBox(NULL, szBuffer, _T("辅助诊断助手"), MB_OK);
-				return 0;
+					int ret = MessageBox(NULL, szBuffer, _T("辅助诊断助手"), MB_OK);
+					return 0;
+				}
 			}
 		}
-	}
+	}*/
 
 	// 初始化 CEF
 	CefSettings settings;
