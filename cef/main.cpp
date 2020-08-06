@@ -306,6 +306,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return 0;
 	}
 
+	CefRefPtr<CefCommandLine> command_line;
+	command_line = CefCommandLine::CreateCommandLine();
+	command_line->AppendSwitch("no-proxy-server");
+
 	// 创建主线程
 	MainThread thread;
 
